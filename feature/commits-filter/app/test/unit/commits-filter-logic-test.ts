@@ -129,10 +129,34 @@ describe('getCommitAuthors', () => {
 
 describe('filterCommits', () => {
   const commits = [
-    createCommit('Fix pagination bug', 'Scrolling loaded twice.', 'Yoko Tanaka', 'yoko@example.com', new Date(2026, 5, 1, 9, 0, 0)),
-    createCommit('Add unit test', 'Introduce the first test.', 'Alex Chen', 'alex@example.com', new Date(2026, 6, 15, 10, 0, 0)),
-    createCommit('Update notes', 'Refactor the parser for speed.', 'Maria García', 'maria@example.com', new Date(2026, 7, 20, 11, 0, 0)),
-    createCommit('fix regression in history', '', 'Alex Chen', 'alex@example.com', new Date(2026, 8, 30, 23, 0, 0)),
+    createCommit(
+      'Fix pagination bug',
+      'Scrolling loaded twice.',
+      'Yoko Tanaka',
+      'yoko@example.com',
+      new Date(2026, 5, 1, 9, 0, 0)
+    ),
+    createCommit(
+      'Add unit test',
+      'Introduce the first test.',
+      'Alex Chen',
+      'alex@example.com',
+      new Date(2026, 6, 15, 10, 0, 0)
+    ),
+    createCommit(
+      'Update notes',
+      'Refactor the parser for speed.',
+      'Maria García',
+      'maria@example.com',
+      new Date(2026, 7, 20, 11, 0, 0)
+    ),
+    createCommit(
+      'fix regression in history',
+      '',
+      'Alex Chen',
+      'alex@example.com',
+      new Date(2026, 8, 30, 23, 0, 0)
+    ),
   ]
 
   it('passes everything through for the empty filter', () => {

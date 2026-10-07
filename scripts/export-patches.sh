@@ -55,6 +55,6 @@ for name in 0001-add-commits-to-repository-section-tab \
   echo "[export-patches] 导出 $name.patch"
 done
 
-# 统计补丁体量（不含文件头）作为「最小侵入」验收指标
-total=$(grep -hE '^[+-][^+-]' "$PATCHES"/*.patch 2>/dev/null | wc -l | tr -d ' ')
+# 统计补丁体量（+/- 行，排除文件头）作为「最小侵入」验收指标
+total=$(cat "$PATCHES"/*.patch 2>/dev/null | grep -E '^[+-]' | grep -cvE '^(\+\+\+|---)')
 echo "[export-patches] 补丁净改动行数（+/-，不含头）: $total"

@@ -183,7 +183,8 @@ export function filterCommits(
 ): ReadonlyArray<Commit> {
   const descriptionTerm = filter.descriptionTerm.trim().toLowerCase()
   const authorEmails = filter.authorEmails.map(email => email.toLowerCase())
-  const dateFrom = filter.dateFrom !== null ? parseDateString(filter.dateFrom) : null
+  const dateFrom =
+    filter.dateFrom !== null ? parseDateString(filter.dateFrom) : null
   const dateTo = filter.dateTo !== null ? parseDateString(filter.dateTo) : null
 
   return commits.filter(commit => {

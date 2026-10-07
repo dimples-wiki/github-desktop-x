@@ -1,10 +1,11 @@
 import * as React from 'react'
+import classNames from 'classnames'
 
-import { Commit, CommitOneLine } from '../../models/commit'
+import { Commit, CommitOneLine, ICommitContext } from '../../models/commit'
 import { IRepositoryState } from '../../lib/app-state'
 import { CommitList } from './commit-list'
 import { Repository } from '../../models/repository'
-import { Dispatcher } from '../dispatcher'
+import { Dispatcher, defaultErrorHandler } from '../dispatcher'
 import { TextBox } from '../lib/text-box'
 import { Select } from '../lib/select'
 import { Button } from '../lib/button'
@@ -13,6 +14,9 @@ import { PopupType } from '../../models/popup'
 import { Emoji } from '../../lib/emoji'
 import { ThrottledScheduler } from '../lib/throttled-scheduler'
 import { formatNumber } from '../../lib/format-number'
+import { getUniqueCoauthorsAsAuthors } from '../../lib/unique-coauthors-as-authors'
+import { getSquashedCommitDescription } from '../../lib/squash/squashed-commit-description'
+import { doMergeCommitsExistAfterCommit } from '../../lib/git'
 import {
   EmptyCommitFilter,
   ICommitFilter,
@@ -164,6 +168,69 @@ export class CommitsSidebar extends React.Component<
     }
   }
 
+  private onSquash = async (
+    toSquash: ReadonlyArray<Commit>,
+    squashOnto: Commit,
+    lastRetainedCommitRef: string | null,
+    isInvokedByContextMenu: boolean
+  ) => {
+    const toSquashSansSquashOnto = toSquash.filter(
+      c => c.sha !== squashOnto.sha
+    )
+
+    const allCommitsInSquash = [...toSquashSansSquashOnto, squashOnto]
+    const coAuthors = getUniqueCoauthorsAsAuthors(allCommitsInSquash)
+
+    const squashedDescription = getSquashedCommitDescription(
+      toSquashSansSquashOnto,
+      squashOnto
+    )
+
+    if (
+      await doMergeCommitsExistAfterCommit(
+        this.props.repository,
+        lastRetainedCommitRef
+      )
+    ) {
+      defaultErrorHandler(
+        new Error(
+          `Unable to squash. Squashing replays all commits up to the last one required for the squash. A merge commit cannot exist among those commits.`
+        ),
+        this.props.dispatcher
+      )
+      return
+    }
+
+    this.props.dispatcher.recordSquashInvoked(isInvokedByContextMenu)
+
+    this.props.dispatcher.showPopup({
+      type: PopupType.CommitMessage,
+      repository: this.props.repository,
+      coAuthors,
+      showCoAuthoredBy: coAuthors.length > 0,
+      commitMessage: {
+        summary: squashOnto.summary,
+        description: squashedDescription,
+        timestamp: Date.now(),
+      },
+      dialogTitle: `Squash ${allCommitsInSquash.length} Commits`,
+      dialogButtonText: `Squash ${allCommitsInSquash.length} Commits`,
+      prepopulateCommitSummary: true,
+      onSubmitCommitMessage: async (context: ICommitContext) => {
+        this.props.dispatcher.closePopup(PopupType.CommitMessage)
+
+        this.props.dispatcher.squash(
+          this.props.repository,
+          toSquashSansSquashOnto,
+          squashOnto,
+          lastRetainedCommitRef,
+          context
+        )
+        return true
+      },
+    })
+  }
+
   private renderFilterBar(
     authors: ReadonlyArray<{ name: string; email: string }>,
     filter: ICommitFilter,
@@ -172,11 +239,14 @@ export class CommitsSidebar extends React.Component<
     totalCount: number
   ) {
     const messageText = filter.messageTerms.join(' ')
+    const dateFromInvalid =
+      filter.dateFrom !== null && !isValidDateString(filter.dateFrom)
+    const dateToInvalid =
+      filter.dateTo !== null && !isValidDateString(filter.dateTo)
 
     return (
       <div className="commits-filter">
         <TextBox
-          type="search"
           className="commits-filter-field"
           placeholder={__DARWIN__ ? 'Filter by Message' : 'Filter by message'}
           ariaLabel={__DARWIN__ ? 'Filter by Message' : 'Filter by message'}
@@ -186,7 +256,6 @@ export class CommitsSidebar extends React.Component<
         />
 
         <TextBox
-          type="search"
           className="commits-filter-field"
           placeholder={
             __DARWIN__ ? 'Filter by Description' : 'Filter by description'
@@ -218,29 +287,33 @@ export class CommitsSidebar extends React.Component<
 
         <div className="commits-filter-row commits-filter-dates">
           <TextBox
-            className="commits-filter-date-field"
+            className={classNames('commits-filter-date-field', {
+              'invalid-date': dateFromInvalid,
+            })}
             placeholder="YYYY-MM-DD"
             ariaLabel="From date"
             value={filter.dateFrom ?? ''}
-            displayInvalidState={
-              filter.dateFrom !== null && !isValidDateString(filter.dateFrom)
-            }
             onValueChanged={this.onDateFromChanged}
           />
           <span className="commits-filter-dates-separator" aria-hidden="true">
             –
           </span>
           <TextBox
-            className="commits-filter-date-field"
+            className={classNames('commits-filter-date-field', {
+              'invalid-date': dateToInvalid,
+            })}
             placeholder="YYYY-MM-DD"
             ariaLabel="To date"
             value={filter.dateTo ?? ''}
-            displayInvalidState={
-              filter.dateTo !== null && !isValidDateString(filter.dateTo)
-            }
             onValueChanged={this.onDateToChanged}
           />
         </div>
+
+        {dateFromInvalid || dateToInvalid ? (
+          <div className="commits-filter-date-hint" role="alert">
+            {__DARWIN__ ? 'Invalid Date' : 'Invalid date'} — YYYY-MM-DD
+          </div>
+        ) : null}
 
         <div className="commits-filter-row commits-filter-summary">
           <span className="commits-filter-count" aria-live="polite">
@@ -324,10 +397,7 @@ export class CommitsSidebar extends React.Component<
               this.props.dispatcher.undoCommit(this.props.repository, commit)
             }
             onResetToCommit={commit =>
-              this.props.dispatcher.resetToCommit(
-                this.props.repository,
-                commit
-              )
+              this.props.dispatcher.resetToCommit(this.props.repository, commit)
             }
             onRevertCommit={this.props.onRevertCommit}
             onAmendCommit={this.props.onAmendCommit}
@@ -370,6 +440,7 @@ export class CommitsSidebar extends React.Component<
             onCherryPick={commits =>
               this.props.onCherryPick(this.props.repository, commits)
             }
+            onSquash={this.onSquash}
             emptyListMessage={emptyListMessage}
             tagsToPush={tagsToPush ?? []}
             disableSquashing={false}

@@ -44,12 +44,24 @@
     .commits-filter-date-field {
       flex: 1;
       min-width: 0;
+
+      // mirrors the native `:invalid` presentation of textboxish inputs
+      // (see mixins/_textboxish.scss focus styles) for our custom date check
+      &.invalid-date input {
+        border-color: var(--error-color);
+      }
     }
 
     .commits-filter-dates-separator {
       color: var(--text-secondary-color);
       flex: initial;
     }
+  }
+
+  .commits-filter-date-hint {
+    color: var(--error-color);
+    font-size: var(--font-size-sm);
+    margin-top: calc(var(--spacing-half) * -1);
   }
 
   .commits-filter-summary {
