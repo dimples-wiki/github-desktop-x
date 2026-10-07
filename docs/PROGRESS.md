@@ -31,7 +31,10 @@
 
 1. **Commits 与 History 共享同一份选择状态/数据**（commitSelection/commitLookup/compareState），右侧详情直接复用 `renderContentForHistory()`——「点开 diff 的体验原生一致」且零数据层改动。
 2. **筛选为组件内纯客户端过滤**（commitSHAs → commits → filterCommits），不改数据流；分页沿用 loadNextCommitBatch。已知限制：筛选作用于「已加载」提交（与 History 渐进加载一致），扩展点见 PLAN。
-3. **拖拽重排在 Commits 视图禁用**（reorderingEnabled=false）：过滤后列表索引 ≠ 真实历史顺序，重排有破坏性；squash/cherry-pick/revert 等按选中提交操作的菜单全部保留。
+3. **拖拽重排在 Commits 视图禁用**（reorderingEnabled=false）：过滤后列表索引 ≠ 真实历史顺序，重排有破坏性；cherry-pick/revert/reset/undo/amend/squash 等按选中提交操作的菜单全部保留（onSquash 已接线，与 Compare 同构）。
+4. **选中项可留在筛选集之外**：详情区共享 History 的 commitSelection，当筛选条件变化使已选中提交不匹配时，详情保持显示该提交（与 History 跨分支切换时保留选中同哲学），列表与详情短暂"脱节"属预期行为。
+5. **Commits 列表不持久化滚动位置**：History 通过 repository 状态恢复滚动；Commits 每次进入回到顶部（筛选场景下恢复滚动意义有限），如需持久化可扩展 onCompareListScrored 接线。
+6. **边框与字体的原生依据**（应对 UI 盲审）：筛选控件使用上游标准 `textboxish` mixin（--contrast-border），与提交输入框等全局文本框一致；详情描述的等宽字体是上游原生样式（_commit-summary.scss:150）。
 4. **时间筛选按 author date**（与列表显示一致），本地时区含边界；非法日期用上游 TextBox 的 displayInvalidState 呈现红色态且不参与过滤。
 
 ## 变更日志

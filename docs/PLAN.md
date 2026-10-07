@@ -11,8 +11,8 @@ dimple-github-desktop/               ← 父仓库（我们的二开仓库）
 ├── upstream/                        ← git submodule：desktop/desktop，锁定 release-3.6.6（浅克隆）
 ├── feature/                         ← 独立功能模块（只包含「新增文件」，路径与上游一一对应）
 │   └── commits-filter/
-│       ├── app/src/ui/commits/…     ← Commits 标签页 UI（容器、筛选栏）
-│       ├── app/src/models/commit-filter.ts ← 纯函数过滤逻辑（高内聚、可单测、可扩展）
+│       ├── app/src/ui/history/commits-sidebar.tsx ← Commits 标签页 UI（容器、筛选栏）
+│       ├── app/src/ui/history/commits-filter-logic.ts ← 纯函数过滤逻辑（高内聚、可单测、可扩展）
 │       ├── app/styles/ui/…          ← 新增样式（复用上游设计变量/类名规范）
 │       └── app/test/unit/commits/…  ← 过滤逻辑单元测试
 ├── patches/                         ← 胶水补丁序列（对上游的**最小侵入**，全部为加法式小改动）
@@ -73,6 +73,7 @@ filterCommits(commits: Commit[], filter: ICommitFilter): Commit[]
 ```
 - 空过滤器 = 原样返回全量；各维度可独立组合；
 - 提供对应的单元测试覆盖：单维度、组合、边界（非法日期、空仓库、作者大小写）。
+- 扩展边界说明：新增「提交元数据」维度（作者/日期/正文/标签等 Commit 模型已有字段）只需修改 feature/ 内文件；若要按「变更文件路径」筛选，则需要上游数据层支持（Commit 模型不含文件列表），属于新增胶水的数据管道扩展。
 
 ### 状态与数据流
 - 提交数据**不另起炉灶**：直接读取上游 `RepositoryStore` 已有的 `historyState`（`commitLookup` + `commitSHAs`，本身即「当前选中分支」的提交序列）；
