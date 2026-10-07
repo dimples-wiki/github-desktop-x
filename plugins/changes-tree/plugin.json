@@ -1,0 +1,6 @@
+{
+  "id": "changes-tree",
+  "title": "Tree",
+  "accelerator": "",
+  "description": "Replaces the flat changes file list with a hierarchical tree view (folders collapsible, status-colored)."
+}

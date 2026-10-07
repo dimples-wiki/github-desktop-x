@@ -3,9 +3,11 @@
 # 并生成 patches/series.txt。每个补丁按文件组拆分，保证补丁与架构文档对应：
 #   0001 app-state        —— RepositorySectionTab 枚举新增 Commits
 #   0002 repository-view  —— TabBar/路由/焦点接线（注册点）
-#   0003 app-store        —— 切换/刷新仓库 section 时处理 Commits
-#   0004 styles           —— 样式索引引入 commits-filter
-#   0005 menu-shortcut    —— ⌘3 "Show Commits" 菜单与快捷键
+#   0003 app-store        —— section 切换/刷新按扩展刷新语义处理
+#   0004 changes-view     —— 文件列表插槽（插件可替换为树形视图）
+#   0005 styles           —— 样式索引引入 commits-filter
+#   0006 menu-shortcut    —— 插件清单驱动的菜单项与快捷键
+#   0007 main-host        —— 启动插件宿主（扫描/下发插件）
 # 兼容 macOS 自带 bash 3.2（不使用关联数组）。
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,11 +22,13 @@ group_files() {
       echo "app/src/ui/repository.tsx" ;;
     0003-extension-framework-app-store)
       echo "app/src/lib/stores/app-store.ts" ;;
-    0004-import-commits-filter-styles)
-      echo "app/styles/ui/_history.scss" ;;
-    0005-extension-framework-menu-shortcut)
-      echo "app/src/models/menu-ids.ts app/src/main-process/menu/menu-event.ts app/src/main-process/menu/build-default-menu.ts app/src/lib/menu-update.ts app/src/ui/app.tsx" ;;
-    0006-rebrand-app-for-coexistence)
+    0004-extension-framework-changes-view)
+      echo "app/src/ui/changes/filter-changes-list.tsx" ;;
+    0006-extension-framework-menu-shortcut)
+      echo "app/src/models/menu-ids.ts app/src/main-process/menu/menu-event.ts app/src/main-process/menu/build-default-menu.ts app/src/ui/app.tsx" ;;
+    0007-extension-host-main)
+      echo "app/src/main-process/main.ts" ;;
+    0008-rebrand-app-for-coexistence)
       echo "app/package.json" ;;
     *) return 1 ;;
   esac
@@ -45,9 +49,10 @@ rm -f "$PATCHES"/*.patch
 for name in 0001-extension-framework-core \
             0002-extension-framework-repository-view \
             0003-extension-framework-app-store \
-            0004-import-commits-filter-styles \
-            0005-extension-framework-menu-shortcut \
-            0006-rebrand-app-for-coexistence; do
+            0004-extension-framework-changes-view \
+            0006-extension-framework-menu-shortcut \
+            0007-extension-host-main \
+            0008-rebrand-app-for-coexistence; do
   files="$(group_files "$name")"
   if git diff --cached --quiet -- $files; then
     echo "[export-patches] 跳过 $name（该组无改动）"

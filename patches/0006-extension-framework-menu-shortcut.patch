@@ -1,38 +1,12 @@
-diff --git a/app/src/lib/menu-update.ts b/app/src/lib/menu-update.ts
-index 373ffae..8365f8b 100644
---- a/app/src/lib/menu-update.ts
-+++ b/app/src/lib/menu-update.ts
-@@ -1,4 +1,5 @@
- import { MenuIDs } from '../models/menu-ids'
-+import { extensionMenuIds } from './extensions/built-in-manifest'
- import { merge } from './merge'
- import { IAppState, SelectionType } from '../lib/app-state'
- import {
-@@ -126,6 +127,7 @@ const allMenuIds: ReadonlyArray<MenuIDs> = [
-   'create-branch',
-   'show-changes',
-   'show-history',
-+  ...extensionMenuIds,
-   'show-repository-list',
-   'show-branches-list',
-   'open-working-directory',
-@@ -246,6 +248,7 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
-     'go-to-commit-message',
-     'show-changes',
-     'show-history',
-+    ...extensionMenuIds,
-     'show-branches-list',
-     'show-worktrees-list',
-     'open-external-editor',
 diff --git a/app/src/main-process/menu/build-default-menu.ts b/app/src/main-process/menu/build-default-menu.ts
-index cd5c20c..d539c46 100644
+index cd5c20c..2d826f1 100644
 --- a/app/src/main-process/menu/build-default-menu.ts
 +++ b/app/src/main-process/menu/build-default-menu.ts
 @@ -9,6 +9,7 @@ import { MenuLabelsEvent } from '../../models/menu-labels'
  import * as ipcWebContents from '../ipc-webcontents'
  import { mkdir } from 'fs/promises'
  import { buildTestMenu } from './build-test-menu'
-+import { getExtensionMenuItems } from '../../lib/extensions/built-in-manifest'
++import { getExtensionMenuItems } from '../../lib/extensions/extension-manifests'
  
  const createPullRequestLabel = __DARWIN__
    ? 'Create Pull Request'

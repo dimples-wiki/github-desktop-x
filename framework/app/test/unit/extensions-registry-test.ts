@@ -1,82 +1,87 @@
-import { describe, it, beforeEach } from "node:test";
-import assert from "node:assert";
+import { describe, it, beforeEach } from 'node:test'
+import assert from 'node:assert'
 
 import {
-  clearRepositorySectionExtensionsForTests,
+  clearExtensionsForTests,
   getExtensionForSection,
+  getRegisteredChangesFileView,
   getRepositorySectionExtensions,
   getSectionForExtension,
+  registerChangesFileView,
   registerRepositorySection,
   sectionForExtensionIndex,
-} from "../../src/lib/extensions/extension-points";
-import { builtInExtensions } from "../../src/lib/extensions/built-in-manifest";
+  subscribeRepositorySectionExtensions,
+} from '../../src/lib/extensions/extension-points'
 
-const fakeSidebar = {} as any;
+const fakeSidebar = {} as any
+const fakeView = {} as any
 
-function registerAll() {
-  for (const entry of builtInExtensions) {
-    registerRepositorySection({
-      id: entry.id,
-      title: entry.title,
-      sidebarComponent: fakeSidebar,
-      refreshOnActivate: "history",
-    });
-  }
+function makeExtension(id: string) {
+  return { id, title: id, sidebarComponent: fakeSidebar, refreshOnActivate: 'history' as const }
 }
 
-describe("repository section extension registry", () => {
+describe('repository section extension registry', () => {
   beforeEach(() => {
-    clearRepositorySectionExtensionsForTests();
-  });
+    clearExtensionsForTests()
+  })
 
-  it("rejects extensions that are not listed in the manifest", () => {
+  it('starts empty and notifies subscribers on registration', () => {
+    let notifications = 0
+    const unsubscribe = subscribeRepositorySectionExtensions(() => {
+      notifications++
+    })
+
+    assert.strictEqual(getRepositorySectionExtensions().length, 0)
+
+    registerRepositorySection(makeExtension('commits-filter'))
+
+    assert.strictEqual(notifications, 1)
+    assert.strictEqual(getRepositorySectionExtensions().length, 1)
+
+    unsubscribe()
+    registerRepositorySection(makeExtension('second'))
+    assert.strictEqual(notifications, 1, 'unsubscribed listener not called')
+  })
+
+  it('rejects duplicate registrations', () => {
+    registerRepositorySection(makeExtension('commits-filter'))
     assert.throws(
-      () =>
-        registerRepositorySection({
-          id: "not-in-manifest",
-          title: "Nope",
-          sidebarComponent: fakeSidebar,
-        }),
-      /must be listed in built-in-manifest/
-    );
-  });
+      () => registerRepositorySection(makeExtension('commits-filter')),
+      /already registered/
+    )
+  })
 
-  it("registers manifest-listed extensions in manifest order", () => {
-    registerAll();
+  it('maps between extensions and stable section values', () => {
+    const first = makeExtension('commits-filter')
+    const second = makeExtension('second')
+    registerRepositorySection(first)
+    registerRepositorySection(second)
 
-    const extensions = getRepositorySectionExtensions();
-    assert.strictEqual(extensions.length, builtInExtensions.length);
-    assert.deepStrictEqual(
-      extensions.map((e) => e.id),
-      builtInExtensions.map((e) => e.id)
-    );
-  });
+    assert.strictEqual(getSectionForExtension(first), sectionForExtensionIndex(0))
+    assert.strictEqual(getSectionForExtension(second), sectionForExtensionIndex(1))
+    assert.strictEqual(getExtensionForSection(sectionForExtensionIndex(0)), first)
+    assert.strictEqual(getExtensionForSection(sectionForExtensionIndex(1)), second)
+  })
 
-  it("rejects duplicate registrations", () => {
-    registerAll();
-    assert.throws(() => registerAll(), /already registered/);
-  });
+  it('returns no extension for built-in sections', () => {
+    registerRepositorySection(makeExtension('commits-filter'))
+    assert.strictEqual(getExtensionForSection(0 as any), undefined)
+    assert.strictEqual(getExtensionForSection(1 as any), undefined)
+    assert.strictEqual(getExtensionForSection(999 as any), undefined)
+  })
+})
 
-  it("maps between extensions and stable section values", () => {
-    registerAll();
+describe('changes file view registry', () => {
+  beforeEach(() => {
+    clearExtensionsForTests()
+  })
 
-    const extensions = getRepositorySectionExtensions();
-    extensions.forEach((extension, index) => {
-      assert.strictEqual(
-        getSectionForExtension(extension),
-        sectionForExtensionIndex(index)
-      );
-      assert.strictEqual(
-        getExtensionForSection(sectionForExtensionIndex(index)),
-        extension
-      );
-    });
-  });
+  it('replaces the previously registered view', () => {
+    registerChangesFileView({ id: 'a', title: 'A', component: fakeView })
+    assert.strictEqual(getRegisteredChangesFileView()?.id, 'a')
 
-  it("returns no extension for built-in sections", () => {
-    registerAll();
-    assert.strictEqual(getExtensionForSection(0 as any), undefined);
-    assert.strictEqual(getExtensionForSection(1 as any), undefined);
-    assert.strictEqual(getExtensionForSection(999 as any), undefined);
-  });
-});
+    registerChangesFileView({ id: 'b', title: 'B', component: fakeView })
+    assert.strictEqual(getRegisteredChangesFileView()?.id, 'b')
+    assert.strictEqual(getRepositorySectionExtensions().length, 0)
+  })
+})

@@ -32,7 +32,13 @@ dimple-github-desktop/               ← 父仓库（我们的二开仓库）
 - 上游侧改动全部收敛为**通用插件框架接线**：`framework/app/src/lib/extensions/`（`extension-points.ts` 注册 API + `built-in-manifest.ts` 纯数据清单，主进程/渲染进程共用）随基线注入；`patches/` 只含「上游文件如何消费扩展点」的通用改动（动态 tab 渲染/路由/聚焦、section 刷新语义、清单驱动菜单）——**不含任何 Commits 业务逻辑**；
 - 全部业务逻辑/组件/样式都在 `feature/`，以 `registerRepositorySection({ id, title, sidebarComponent, refreshOnActivate })` **自注册为插件**（`app/src/lib/extensions/built-in/`，overlay 注入，不进补丁）；
 - 上游更新时：升级 submodule → 重放补丁（冲突只可能出现在框架接线点）→ `assemble.sh` 重组装；
-- **新增第二个插件** = manifest 加一行 + `built-in/` 加一个模块 + `register()` 调用，上游侧零改动；
+- **v2 已升级为运行时动态加载**：插件不再编译进应用——
+  - 主进程 `plugin-host` 扫描 `<userData>/plugins/<name>/{plugin.json,renderer.js}`，
+    渲染进程就绪后经 IPC 下发插件代码，渲染进程在受控 API（`__GHD_EXTENSION_API__`：
+    React、宿主组件 CommitList/TextBox/Select/Button/Octicon、octicons、PopupType、注册函数）下 eval 注册；
+  - 注册表是响应式的（订阅 + 强制重渲染），插件装载后 tab/视图**无需重启即可出现**；菜单经既有重建路径合并插件项；
+  - 上游侧改动仍然只有「扩展点入口」（本框架），插件以独立目录分发（`plugins/`，esbuild 产出 IIFE）；
+  - 内置（编译期）插件形态保留为合法退化路径；
 - 「插件化」的实质：胶水层 = **扩展点框架**（对上游通用），功能层 = 自注册插件（业务自包含）。
 
 ### 组装流程（scripts/assemble.sh）

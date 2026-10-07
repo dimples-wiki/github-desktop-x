@@ -125,3 +125,30 @@
 ## 框架层新增单测
 
 - `extensions-registry-test.ts`（5 用例）：manifest 校验/注册顺序/重复注册拒绝/section 双向映射/内建 section 不映射 —— 共 23 单测全绿
+
+
+---
+
+# 第五轮验收：运行时动态插件（2026-10-08）
+
+架构升级为「上游只有扩展点入口 + 插件运行时动态加载」后的机制验证（功能逻辑与第四轮一致，未重写）：
+
+## 双场景实证（GUI 自动化）
+
+| 场景 | 结果 |
+|------|------|
+| 未安装插件 | tabs = [Changes, History]，Changes 页无树视图（0 行）——**扩展点零痕迹**（截图 19） |
+| 安装两个插件 | tabs = [Changes, History, **Commits**]（动态注册，无需重启）；Commits 筛选可用（34 commits / fix→1）；Changes 文件列表被 **changes-tree** 插件替换为树形视图（src→plugins→demo.js 层级、状态色点、文件夹折叠+计数）；点击 README2.md → 宿主 diff 正确跟随（截图 20/21/22） |
+
+## 机制组成
+
+- 主进程 plugin-host：扫描 `<userData>/plugins`（DIMPLE_PLUGINS_DIR 可覆盖），读 plugin.json + renderer.js，seed 菜单清单 + 重建菜单
+- 渲染进程 plugin-loader：IPC 就绪握手接收插件代码，在 `__GHD_EXTENSION_API__`（React/宿主组件/octicons/PopupType/注册函数/isDarwin）下 eval
+- 响应式注册表：repository.tsx 订阅，插件装载即渲染 tab
+- ChangesFileViewSlot：changes 列表的单点替换插槽（fallback=原生列表）
+
+## 插件物料
+
+- `plugins/commits-filter/`：plugin.json + src（ghd 桥/纯逻辑/组件/注册）+ 18 个单测（构建时运行）
+- `plugins/changes-tree/`：plugin.json + src/index.tsx（树构建/折叠/状态色/选型联动）
+- `scripts/build-plugins.sh`（esbuild→IIFE）、`scripts/install-plugins.sh`

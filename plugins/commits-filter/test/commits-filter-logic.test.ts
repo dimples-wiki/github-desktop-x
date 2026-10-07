@@ -1,8 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
 
-import { Commit } from '../../src/models/commit'
-import { CommitIdentity } from '../../src/models/commit-identity'
 import {
   EmptyCommitFilter,
   filterCommits,
@@ -10,7 +8,7 @@ import {
   isEmptyCommitFilter,
   isValidDateString,
   parseDateString,
-} from '../../src/ui/history/commits-filter-logic'
+} from '../src/commits-filter-logic'
 
 let counter = 0
 
@@ -20,24 +18,20 @@ function createCommit(
   authorName: string = 'Yoko Tanaka',
   authorEmail: string = 'yoko@example.com',
   date: Date = new Date(2026, 5, 15, 12, 0, 0)
-): Commit {
+) {
   counter++
-  const identity = new CommitIdentity(authorName, authorEmail, date)
+  const author = { name: authorName, email: authorEmail, date }
 
-  return new Commit(
-    `sha${counter}`,
-    `abc${counter}`,
+  return {
+    sha: `sha${counter}`,
     summary,
     body,
-    identity,
-    identity,
-    [],
-    [],
-    []
-  )
+    author,
+    committer: author,
+  }
 }
 
-function summaryOf(commits: ReadonlyArray<Commit>): string[] {
+function summaryOf(commits: ReadonlyArray<any>): string[] {
   return commits.map(c => c.summary)
 }
 

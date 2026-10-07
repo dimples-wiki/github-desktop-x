@@ -1,21 +1,12 @@
-import * as React from 'react'
-import classNames from 'classnames'
+import { React } from './ghd'
 
-import { Commit, ICommitContext } from '../../models/commit'
-import { CommitList } from './commit-list'
-import { defaultErrorHandler } from '../dispatcher'
-import { TextBox } from '../lib/text-box'
-import { Select } from '../lib/select'
-import { Button } from '../lib/button'
-import { PopupType } from '../../models/popup'
-import { ThrottledScheduler } from '../lib/throttled-scheduler'
-import { formatNumber } from '../../lib/format-number'
-import { Octicon } from '../octicons'
-import * as octicons from '../octicons/octicons.generated'
-import { getUniqueCoauthorsAsAuthors } from '../../lib/unique-coauthors-as-authors'
-import { getSquashedCommitDescription } from '../../lib/squash/squashed-commit-description'
-import { doMergeCommitsExistAfterCommit } from '../../lib/git'
-import { IRepositorySectionContext } from '../../lib/extensions/extension-points'
+/** Runtime platform flag (the host injects __DARWIN__ only at build time). */
+const __DARWIN__ = (globalThis as any).__GHD_EXTENSION_API__.isDarwin
+
+/** Tiny className joiner (avoids bundling classnames into the plugin). */
+function cx(...parts: Array<string | false | null | undefined>): string {
+  return parts.filter(Boolean).join(' ')
+}
 import {
   EmptyCommitFilter,
   ICommitFilter,
@@ -25,62 +16,55 @@ import {
   isValidDateString,
 } from './commits-filter-logic'
 
-interface ICommitsSidebarState {
-  /** The filter currently applied to the commit list. */
-  readonly filter: ICommitFilter
-
-  /**
-   * Whether the advanced filters (description, author, date range) are
-   * expanded. Collapsed by default so the tab leads with a single search box.
-   */
-  readonly expanded: boolean
-}
+const { CommitList, TextBox, Select, Button, Octicon } = (globalThis as any)
+  .__GHD_EXTENSION_API__.components
+const octicons = (globalThis as any).__GHD_EXTENSION_API__.octicons
+const PopupType = (globalThis as any).__GHD_EXTENSION_API__.PopupType
 
 /** If we're within this many rows from the bottom, load the next history batch. */
 const CloseToBottomThreshold = 10
 
 const AllAuthorsValue = ''
 
+interface ICommitsSidebarState {
+  readonly filter: ICommitFilter
+  readonly expanded: boolean
+}
+
 /**
- * The "Commits" repository section extension: the history commit list of the
- * current branch, extended with client-side filtering (by author, commit
- * message, description, and author date range).
- *
- * The list itself is the very same `CommitList` used by the History tab, so
- * selection, context menus, keyboard navigation and pagination behave exactly
- * like they do there.
+ * The "Commits" section: the history commit list of the current branch,
+ * extended with client-side filtering (author / message / description /
+ * author date range). Uses the host's own CommitList so selection, context
+ * menus, keyboard navigation and pagination behave exactly like History.
  */
-export class CommitsSidebar extends React.Component<
-  IRepositorySectionContext,
-  ICommitsSidebarState
-> {
-  private readonly commitListRef = React.createRef<CommitList>()
-  private readonly loadChangedFilesScheduler = new ThrottledScheduler(200)
+export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
+  private readonly commitListRef = { current: null }
+  private loadChangedFilesTimer: any = null
   private loadingMoreCommitsPromise: Promise<void> | null = null
 
-  public constructor(props: IRepositorySectionContext) {
+  public constructor(props: any) {
     super(props)
 
     this.state = { filter: EmptyCommitFilter, expanded: false }
   }
 
   public componentWillMount() {
-    // Make sure the compare state (i.e. the commits of the current branch)
-    // is initialized even when the user jumps straight to this tab.
+    // Make sure the compare state (the commits of the current branch) is
+    // initialized even when the user jumps straight to this tab.
     this.props.dispatcher.initializeCompare(this.props.repository)
   }
 
   /** Focuses the commit list (used by the "Show Commits" menu accelerator). */
   public focus() {
-    this.commitListRef.current?.focus()
+    ;(this.commitListRef.current as any)?.focus()
   }
 
   private onToggleExpanded = () => {
-    this.setState(prevState => ({ expanded: !prevState.expanded }))
+    this.setState((prevState: any) => ({ expanded: !prevState.expanded }))
   }
 
   private onFilterChanged = (update: Partial<ICommitFilter>) => {
-    this.setState(prevState => ({
+    this.setState((prevState: any) => ({
       filter: { ...prevState.filter, ...update },
     }))
   }
@@ -89,8 +73,8 @@ export class CommitsSidebar extends React.Component<
     this.onFilterChanged({
       messageTerms: value
         .split(/\s+/)
-        .map(term => term.trim())
-        .filter(term => term.length > 0),
+        .map((term: string) => term.trim())
+        .filter((term: string) => term.length > 0),
     })
   }
 
@@ -98,7 +82,7 @@ export class CommitsSidebar extends React.Component<
     this.onFilterChanged({ descriptionTerm: value })
   }
 
-  private onAuthorChanged = (event: React.FormEvent<HTMLSelectElement>) => {
+  private onAuthorChanged = (event: any) => {
     const email = event.currentTarget.value
 
     this.onFilterChanged({ authorEmails: email === '' ? [] : [email] })
@@ -116,21 +100,23 @@ export class CommitsSidebar extends React.Component<
     this.setState({ filter: EmptyCommitFilter })
   }
 
-  private onCommitsSelected = (
-    commits: ReadonlyArray<Commit>,
-    isContiguous: boolean
-  ) => {
+  private onCommitsSelected = (commits: any, isContiguous: boolean) => {
     this.props.dispatcher.changeCommitSelection(
       this.props.repository,
-      commits.map(c => c.sha),
+      commits.map((c: any) => c.sha),
       isContiguous
     )
 
-    this.loadChangedFilesScheduler.queue(() => {
+    // Debounced changed-files load for the freshly selected commit(s).
+    if (this.loadChangedFilesTimer !== null) {
+      clearTimeout(this.loadChangedFilesTimer)
+    }
+    this.loadChangedFilesTimer = setTimeout(() => {
+      this.loadChangedFilesTimer = null
       this.props.dispatcher.loadChangedFilesForCurrentSelection(
         this.props.repository
       )
-    })
+    }, 200)
   }
 
   private onScroll = (start: number, end: number) => {
@@ -138,17 +124,12 @@ export class CommitsSidebar extends React.Component<
 
     if (commitSHAs.length - end <= CloseToBottomThreshold) {
       if (this.loadingMoreCommitsPromise != null) {
-        // as this callback fires for any scroll event we need to guard
-        // against re-entrant calls to loadCommitBatch
         return
       }
 
       this.loadingMoreCommitsPromise = this.props.dispatcher
         .loadNextCommitBatch(this.props.repository)
         .then(() => {
-          // deferring unsetting this flag to some time _after_ the commits
-          // have been appended to prevent eagerly adding more commits due
-          // to scroll events (which fire indiscriminately)
           window.setTimeout(() => {
             this.loadingMoreCommitsPromise = null
           }, 500)
@@ -156,71 +137,8 @@ export class CommitsSidebar extends React.Component<
     }
   }
 
-  private onSquash = async (
-    toSquash: ReadonlyArray<Commit>,
-    squashOnto: Commit,
-    lastRetainedCommitRef: string | null,
-    isInvokedByContextMenu: boolean
-  ) => {
-    const toSquashSansSquashOnto = toSquash.filter(
-      c => c.sha !== squashOnto.sha
-    )
-
-    const allCommitsInSquash = [...toSquashSansSquashOnto, squashOnto]
-    const coAuthors = getUniqueCoauthorsAsAuthors(allCommitsInSquash)
-
-    const squashedDescription = getSquashedCommitDescription(
-      toSquashSansSquashOnto,
-      squashOnto
-    )
-
-    if (
-      await doMergeCommitsExistAfterCommit(
-        this.props.repository,
-        lastRetainedCommitRef
-      )
-    ) {
-      defaultErrorHandler(
-        new Error(
-          `Unable to squash. Squashing replays all commits up to the last one required for the squash. A merge commit cannot exist among those commits.`
-        ),
-        this.props.dispatcher
-      )
-      return
-    }
-
-    this.props.dispatcher.recordSquashInvoked(isInvokedByContextMenu)
-
-    this.props.dispatcher.showPopup({
-      type: PopupType.CommitMessage,
-      repository: this.props.repository,
-      coAuthors,
-      showCoAuthoredBy: coAuthors.length > 0,
-      commitMessage: {
-        summary: squashOnto.summary,
-        description: squashedDescription,
-        timestamp: Date.now(),
-      },
-      dialogTitle: `Squash ${allCommitsInSquash.length} Commits`,
-      dialogButtonText: `Squash ${allCommitsInSquash.length} Commits`,
-      prepopulateCommitSummary: true,
-      onSubmitCommitMessage: async (context: ICommitContext) => {
-        this.props.dispatcher.closePopup(PopupType.CommitMessage)
-
-        this.props.dispatcher.squash(
-          this.props.repository,
-          toSquashSansSquashOnto,
-          squashOnto,
-          lastRetainedCommitRef,
-          context
-        )
-        return true
-      },
-    })
-  }
-
   private renderAdvancedFilters(
-    authors: ReadonlyArray<{ name: string; email: string }>,
+    authors: ReadonlyArray<any>,
     filter: ICommitFilter
   ) {
     const dateFromInvalid =
@@ -232,12 +150,8 @@ export class CommitsSidebar extends React.Component<
       <>
         <TextBox
           className="commits-filter-field"
-          placeholder={
-            __DARWIN__ ? 'Filter by Description' : 'Filter by description'
-          }
-          ariaLabel={
-            __DARWIN__ ? 'Filter by Description' : 'Filter by description'
-          }
+          placeholder={__DARWIN__ ? 'Filter by Description' : 'Filter by description'}
+          ariaLabel={__DARWIN__ ? 'Filter by Description' : 'Filter by description'}
           value={filter.descriptionTerm}
           displayClearButton={filter.descriptionTerm.length > 0}
           onValueChanged={this.onDescriptionTextChanged}
@@ -252,7 +166,7 @@ export class CommitsSidebar extends React.Component<
             <option value={AllAuthorsValue}>
               {__DARWIN__ ? 'All Authors' : 'All authors'}
             </option>
-            {authors.map(author => (
+            {authors.map((author: any) => (
               <option key={author.email} value={author.email}>
                 {author.name}
               </option>
@@ -262,7 +176,7 @@ export class CommitsSidebar extends React.Component<
 
         <div className="commits-filter-row commits-filter-dates">
           <TextBox
-            className={classNames('commits-filter-date-field', {
+            className={cx('commits-filter-date-field', {
               'invalid-date': dateFromInvalid,
             })}
             placeholder="YYYY-MM-DD"
@@ -274,7 +188,7 @@ export class CommitsSidebar extends React.Component<
             –
           </span>
           <TextBox
-            className={classNames('commits-filter-date-field', {
+            className={cx('commits-filter-date-field', {
               'invalid-date': dateToInvalid,
             })}
             placeholder="YYYY-MM-DD"
@@ -287,7 +201,7 @@ export class CommitsSidebar extends React.Component<
         {/* Always rendered (reserved height) so that fixing the date does
             not make the list jump. */}
         <div
-          className={classNames('commits-filter-date-hint', {
+          className={cx('commits-filter-date-hint', {
             visible: dateFromInvalid || dateToInvalid,
           })}
           role="alert"
@@ -299,7 +213,7 @@ export class CommitsSidebar extends React.Component<
   }
 
   private renderFilterBar(
-    authors: ReadonlyArray<{ name: string; email: string }>,
+    authors: ReadonlyArray<any>,
     filter: ICommitFilter,
     filtersActive: boolean,
     hiddenFiltersActive: boolean,
@@ -313,7 +227,7 @@ export class CommitsSidebar extends React.Component<
       <div className="commits-filter">
         <div className="commits-filter-row commits-filter-primary">
           <Button
-            className={classNames('commits-filter-toggle', {
+            className={cx('commits-filter-toggle', {
               selected: hiddenFiltersActive && !expanded,
             })}
             ariaExpanded={expanded}
@@ -323,8 +237,8 @@ export class CommitsSidebar extends React.Component<
                   ? 'Hide Advanced Filters'
                   : 'Hide advanced filters'
                 : __DARWIN__
-                ? 'Show Advanced Filters'
-                : 'Show advanced filters'
+                  ? 'Show Advanced Filters'
+                  : 'Show advanced filters'
             }
             onClick={this.onToggleExpanded}
           >
@@ -333,8 +247,8 @@ export class CommitsSidebar extends React.Component<
                 expanded
                   ? octicons.chevronUp
                   : hiddenFiltersActive
-                  ? octicons.filter
-                  : octicons.chevronDown
+                    ? octicons.filter
+                    : octicons.chevronDown
               }
             />
           </Button>
@@ -354,10 +268,8 @@ export class CommitsSidebar extends React.Component<
         <div className="commits-filter-row commits-filter-summary">
           <span className="commits-filter-count" aria-live="polite">
             {filtersActive
-              ? `${formatNumber(matchingCount)} of ${formatNumber(
-                  totalCount
-                )} commits`
-              : `${formatNumber(totalCount)} commits`}
+              ? `${matchingCount} of ${totalCount} commits`
+              : `${totalCount} commits`}
           </span>
           {filtersActive ? (
             <Button
@@ -384,7 +296,7 @@ export class CommitsSidebar extends React.Component<
       multiCommitOperationState,
     } = this.props.state
 
-    const commits: Commit[] = []
+    const commits: any[] = []
     for (const sha of compareState.commitSHAs) {
       const commit = commitLookup.get(sha)
       if (commit !== undefined) {
@@ -395,10 +307,9 @@ export class CommitsSidebar extends React.Component<
     const filter = this.state.filter
     const filtersActive = !isEmptyCommitFilter(filter)
     const matchingCommits = filterCommits(commits, filter)
-    const matchingSHAs = matchingCommits.map(c => c.sha)
+    const matchingSHAs = matchingCommits.map((c: any) => c.sha)
     const authors = getCommitAuthors(commits)
 
-    // Filters that are collapsed right now but still narrowing the list.
     const hiddenFiltersActive =
       filtersActive &&
       !this.state.expanded &&
@@ -407,15 +318,10 @@ export class CommitsSidebar extends React.Component<
         filter.dateFrom !== null ||
         filter.dateTo !== null)
 
-    // Follows the native blankslate pattern (icon + title + description +
-    // action) used by e.g. the Changes interstitial.
     const emptyListMessage = filtersActive
       ? ((
           <div className="commits-filter-empty">
-            <Octicon
-              className="commits-filter-empty-icon"
-              symbol={octicons.search}
-            />
+            <Octicon className="commits-filter-empty-icon" symbol={octicons.search} />
             <h2>No commits match your filters</h2>
             <p>Try adjusting or clearing your filters.</p>
             <Button
@@ -425,8 +331,11 @@ export class CommitsSidebar extends React.Component<
               {__DARWIN__ ? 'Clear Filters' : 'Clear filters'}
             </Button>
           </div>
-        ) as JSX.Element)
+        ) as any)
       : 'No history'
+
+    const dispatcher = this.props.dispatcher
+    const repository = this.props.repository
 
     return (
       <div
@@ -446,7 +355,7 @@ export class CommitsSidebar extends React.Component<
         <div className="commits-commit-list">
           <CommitList
             ref={this.commitListRef}
-            gitHubRepository={this.props.repository.gitHubRepository}
+            gitHubRepository={repository.gitHubRepository}
             isLocalRepository={remote === null}
             commitLookup={commitLookup}
             commitSHAs={matchingSHAs}
@@ -460,60 +369,45 @@ export class CommitsSidebar extends React.Component<
             reorderingEnabled={false}
             disableReordering={true}
             onViewCommitOnGitHub={this.props.onViewCommitOnGitHub}
-            onUndoCommit={commit =>
-              this.props.dispatcher.undoCommit(this.props.repository, commit)
-            }
-            onResetToCommit={commit =>
-              this.props.dispatcher.resetToCommit(this.props.repository, commit)
+            onUndoCommit={(commit: any) => dispatcher.undoCommit(repository, commit)}
+            onResetToCommit={(commit: any) =>
+              dispatcher.resetToCommit(repository, commit)
             }
             onRevertCommit={this.props.onRevertCommit}
             onAmendCommit={this.props.onAmendCommit}
             onCommitsSelected={this.onCommitsSelected}
             onScroll={this.onScroll}
-            onCreateBranch={commit =>
-              this.props.dispatcher.showPopup({
+            onCreateBranch={(commit: any) =>
+              dispatcher.showPopup({
                 type: PopupType.CreateBranch,
-                repository: this.props.repository,
+                repository,
                 targetCommit: commit,
               })
             }
-            onCheckoutCommit={commit => {
+            onCheckoutCommit={(commit: any) => {
               if (!this.props.askForConfirmationOnCheckoutCommit) {
-                this.props.dispatcher.checkoutCommit(
-                  this.props.repository,
-                  commit
-                )
+                dispatcher.checkoutCommit(repository, commit)
               } else {
-                this.props.dispatcher.showPopup({
+                dispatcher.showPopup({
                   type: PopupType.ConfirmCheckoutCommit,
-                  commit: commit,
-                  repository: this.props.repository,
+                  commit,
+                  repository,
                 })
               }
             }}
-            onCreateTag={targetCommitSha =>
-              this.props.dispatcher.showCreateTagDialog(
-                this.props.repository,
-                targetCommitSha,
-                localTags
-              )
+            onCreateTag={(targetCommitSha: string) =>
+              dispatcher.showCreateTagDialog(repository, targetCommitSha, localTags)
             }
-            onDeleteTag={tagName =>
-              this.props.dispatcher.showDeleteTagDialog(
-                this.props.repository,
-                tagName
-              )
+            onDeleteTag={(tagName: string) =>
+              dispatcher.showDeleteTagDialog(repository, tagName)
             }
-            onCherryPick={commits =>
-              this.props.onCherryPick(this.props.repository, commits)
+            onCherryPick={(commitsToPick: any) =>
+              this.props.onCherryPick(repository, commitsToPick)
             }
-            onSquash={this.onSquash}
             emptyListMessage={emptyListMessage}
             tagsToPush={tagsToPush ?? []}
-            disableSquashing={false}
-            isMultiCommitOperationInProgress={
-              multiCommitOperationState !== null
-            }
+            disableSquashing={true}
+            isMultiCommitOperationInProgress={multiCommitOperationState !== null}
             accounts={this.props.accounts}
             preferAbsoluteDates={this.props.preferAbsoluteDates}
           />

@@ -1,0 +1,6 @@
+{
+  "id": "commits-filter",
+  "title": "Commits",
+  "accelerator": "CmdOrCtrl+3",
+  "description": "Adds a Commits tab next to History with filtering by author, message, description and date range."
+}

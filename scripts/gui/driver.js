@@ -35,16 +35,44 @@ const FAKE_HOME = path.join(RUNTIME, 'fake-home')
 const SCREENSHOTS = path.join(ROOT, 'screenshots')
 const DEFAULT_REPO = path.join(ROOT, 'scripts', 'fixtures', 'demo-repo')
 
+/** 把 plugins/<name>/{plugin.json,renderer.js} 复制到 userData/plugins。 */
+function copyPluginsInto(userDataDir) {
+  const srcDir = path.join(ROOT, 'plugins')
+  if (!fs.existsSync(srcDir)) {
+    return
+  }
+  for (const name of fs.readdirSync(srcDir)) {
+    const pluginDir = path.join(srcDir, name)
+    const manifest = path.join(pluginDir, 'plugin.json')
+    const bundle = path.join(pluginDir, 'renderer.js')
+    if (fs.existsSync(manifest) && fs.existsSync(bundle)) {
+      const dest = path.join(userDataDir, 'plugins', name)
+      fs.mkdirSync(dest, { recursive: true })
+      fs.copyFileSync(manifest, path.join(dest, 'plugin.json'))
+      fs.copyFileSync(bundle, path.join(dest, 'renderer.js'))
+    }
+  }
+}
+
 /** 启动应用（默认打开 demo-repo），完成首启流程后返回 { app, page }。
  *  每次默认清空 user-data（与上游 e2e 一致——残留的扩展状态会导致渲染进程 sandbox 崩溃），
+ *  然后自动重装已构建插件（plugins:false 可模拟"未安装插件"场景），
  *  首启的 welcome 流程由 ensureFirstRunDone 自动完成。 */
-async function launch({ repo = DEFAULT_REPO, fresh = true } = {}) {
+async function launch({
+  repo = DEFAULT_REPO,
+  fresh = true,
+  plugins = true,
+} = {}) {
   if (fresh) {
     fs.rmSync(USER_DATA, { recursive: true, force: true })
   }
   fs.mkdirSync(USER_DATA, { recursive: true })
   fs.mkdirSync(FAKE_HOME, { recursive: true })
   fs.mkdirSync(SCREENSHOTS, { recursive: true })
+
+  if (plugins) {
+    copyPluginsInto(USER_DATA)
+  }
 
   const entryPoint = path.join(ROOT, 'workspace', 'out', 'main.js')
   if (!fs.existsSync(entryPoint)) {

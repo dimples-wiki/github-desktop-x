@@ -1,21 +1,17 @@
-import { Commit } from '../../models/commit'
-
 /**
- * The active filter of the Commits tab.
+ * Pure filtering logic of the commits-filter plugin.
  *
- * Every dimension is optional in the sense that an "empty" value means
- * "no constraint". Dimensions combine with AND while terms inside a
- * dimension combine with OR (currently at most one author is selected)
- * — see `filterCommits`.
+ * No React / no host imports — fully unit-testable in isolation.
  */
+
+/** The active filter of the Commits tab. */
 export interface ICommitFilter {
   /** Emails (lower-cased) of the authors to include. Empty means all authors. */
   readonly authorEmails: ReadonlyArray<string>
 
   /**
    * Terms which must all appear (case-insensitively, as substrings) in the
-   * commit summary. This gives a forgiving "fuzzy" search where the entered
-   * words can occur anywhere and in any order.
+   * commit summary — a forgiving "fuzzy" AND search.
    */
   readonly messageTerms: ReadonlyArray<string>
 
@@ -41,7 +37,6 @@ export const EmptyCommitFilter: ICommitFilter = {
 /** An author of one or more commits, deduplicated by email. */
 export interface ICommitAuthor {
   readonly name: string
-  /** The lower-cased email address (used as the stable identifier). */
   readonly email: string
 }
 
@@ -58,8 +53,7 @@ export function isEmptyCommitFilter(filter: ICommitFilter): boolean {
 
 /**
  * Parses a date string in the `YYYY-MM-DD` format into a local-time `Date`
- * at midnight. Returns `null` for anything which is not a valid calendar
- * date (including empty strings, garbage, and dates like `2026-02-30`).
+ * at midnight. Returns `null` for anything that is not a valid calendar date.
  */
 export function parseDateString(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim())
@@ -92,19 +86,14 @@ export function isValidDateString(value: string): boolean {
 
 /** The list of distinct commit authors, deduplicated by (lower-cased) email. */
 export function getCommitAuthors(
-  commits: ReadonlyArray<Commit>
+  commits: ReadonlyArray<any>
 ): ReadonlyArray<ICommitAuthor> {
   const authorsByEmail = new Map<string, ICommitAuthor>()
 
   for (const commit of commits) {
     const email = commit.author.email.toLowerCase()
-    const existing = authorsByEmail.get(email)
-
-    if (existing === undefined) {
-      authorsByEmail.set(email, {
-        name: commit.author.name,
-        email,
-      })
+    if (!authorsByEmail.has(email)) {
+      authorsByEmail.set(email, { name: commit.author.name, email })
     }
   }
 
@@ -113,7 +102,6 @@ export function getCommitAuthors(
   )
 }
 
-/** The inclusive start (local midnight) of the given `YYYY-MM-DD` day. */
 function startOfDay(date: Date): number {
   return new Date(
     date.getFullYear(),
@@ -126,7 +114,6 @@ function startOfDay(date: Date): number {
   ).getTime()
 }
 
-/** The inclusive end (local end of day) of the given `YYYY-MM-DD` day. */
 function endOfDay(date: Date): number {
   return new Date(
     date.getFullYear(),
@@ -139,9 +126,8 @@ function endOfDay(date: Date): number {
   ).getTime()
 }
 
-/** Whether the commit's author date falls into the given (inclusive) range. */
 function matchesDateRange(
-  commit: Commit,
+  commit: any,
   from: Date | null,
   to: Date | null
 ): boolean {
@@ -159,28 +145,20 @@ function matchesDateRange(
   return true
 }
 
-/** Whether every term occurs (case-insensitively) in the given haystack. */
-function matchesAllTerms(
-  haystack: string,
-  terms: ReadonlyArray<string>
-): boolean {
+function matchesAllTerms(haystack: string, terms: ReadonlyArray<string>) {
   const lowered = haystack.toLowerCase()
-
   return terms.every(term => lowered.includes(term.toLowerCase()))
 }
 
 /**
- * Returns the subset of commits matching all active filter dimensions.
- *
- * - authors: OR over the selected emails
- * - message terms: AND over all terms (fuzzy substring search)
- * - description: single case-insensitive substring
- * - date range: inclusive bounds on the author date (local time)
+ * Returns the subset of commits matching all active filter dimensions
+ * (authors OR-combined, message terms AND-combined, description substring,
+ * inclusive author-date range).
  */
 export function filterCommits(
-  commits: ReadonlyArray<Commit>,
+  commits: ReadonlyArray<any>,
   filter: ICommitFilter
-): ReadonlyArray<Commit> {
+): ReadonlyArray<any> {
   const descriptionTerm = filter.descriptionTerm.trim().toLowerCase()
   const authorEmails = filter.authorEmails.map(email => email.toLowerCase())
   const dateFrom =
@@ -204,7 +182,7 @@ export function filterCommits(
 
     if (
       descriptionTerm.length > 0 &&
-      !commit.body.toLowerCase().includes(descriptionTerm)
+      !String(commit.body ?? '').toLowerCase().includes(descriptionTerm)
     ) {
       return false
     }

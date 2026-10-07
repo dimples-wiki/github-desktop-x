@@ -1,0 +1,23 @@
+diff --git a/app/src/main-process/main.ts b/app/src/main-process/main.ts
+index 846b399..474de3f 100644
+--- a/app/src/main-process/main.ts
++++ b/app/src/main-process/main.ts
+@@ -14,6 +14,7 @@ import * as Fs from 'fs'
+ 
+ import { AppWindow } from './app-window'
+ import { buildDefaultMenu, getAllMenuItems } from './menu'
++import { initializeExtensionHost } from './extensions/plugin-host'
+ import { shellNeedsPatching, updateEnvironmentForProcess } from '../lib/shell'
+ import { parseAppURL } from '../lib/parse-app-url'
+ import {
+@@ -350,6 +351,10 @@ app.on('ready', () => {
+   // repo assets
+   const updateAccounts = installAuthenticatedImageFilter(orderedWebRequest)
+ 
++  // Discover installed plugins before the menu is built so their items
++  // are part of the initial template.
++  initializeExtensionHost()
++
+   Menu.setApplicationMenu(
+     buildDefaultMenu({
+       selectedShell: null,

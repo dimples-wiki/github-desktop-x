@@ -1,6 +1,7 @@
 0001-extension-framework-core.patch
 0002-extension-framework-repository-view.patch
 0003-extension-framework-app-store.patch
-0004-import-commits-filter-styles.patch
-0005-extension-framework-menu-shortcut.patch
-0006-rebrand-app-for-coexistence.patch
+0004-extension-framework-changes-view.patch
+0006-extension-framework-menu-shortcut.patch
+0007-extension-host-main.patch
+0008-rebrand-app-for-coexistence.patch

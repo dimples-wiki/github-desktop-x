@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
-"""在 workspace 中应用「插件框架接线」胶水改动。
+"""在 workspace 中应用「插件框架接线」胶水改动（v2：运行时动态插件）。
 
-设计：上游侧的改动全部是**通用**的扩展点接线（不包含任何 Commits 业务逻辑）：
+上游侧的改动全部是**通用**的扩展点接线（不包含任何 Commits/Tree 业务逻辑）：
   - RepositorySectionTab 枚举提供 ExtensionStart 基值
-  - repository.tsx 动态渲染/路由/聚焦扩展 tab
+  - repository.tsx 动态渲染/路由/聚焦扩展 tab；挂载时初始化插件加载器并订阅注册表
   - app-store.ts 按扩展声明的刷新语义处理 section 切换/刷新
-  - 菜单（View / ids / events / state）由内置扩展清单驱动
-业务功能本身通过 feature/<plugin>/app/src/lib/extensions/built-in/ 注册（overlay，不进补丁）。
+  - filter-changes-list.tsx 提供 ChangesFileViewSlot 插槽（插件可替换文件列表）
+  - build-default-menu.ts / menu-ids / menu-event / app.tsx 由插件清单驱动菜单
+  - main.ts 启动插件宿主（扫描 plugins 目录、下发插件包、重建菜单）
+
+插件本体在运行时由 main-process/extensions/plugin-host 动态加载（见 plugins/）。
 
 每个锚点(old)必须恰好出现期望次数，否则中止且不落盘。
-`--fresh` 先把 workspace 回退到基线（撤销已重放的补丁）再注入，用于
-「修改胶水 → 重导补丁」的开发流。
+`--fresh` 先把 workspace 回退到基线（撤销已重放的补丁）再注入。
 """
 import sys
 from pathlib import Path
 
 WS = Path(__file__).resolve().parent.parent / "workspace"
 
-# (相对路径, old, new, 期望出现次数)
 EDITS = [
     # ---- F1: RepositorySectionTab 提供 ExtensionStart 基值 ----
     (
@@ -32,7 +33,7 @@ EDITS = [
         "}",
         1,
     ),
-    # ---- F2: repository.tsx —— 扩展 tab 的动态渲染/路由/聚焦（通用接线）----
+    # ---- F2: repository.tsx ----
     (
         "app/src/ui/repository.tsx",
         "import { SelectedCommits, CompareSidebar } from './history'",
@@ -43,9 +44,9 @@ EDITS = [
         "  getSectionForExtension,\n"
         "  getTabIdForExtension,\n"
         "  sectionForExtensionIndex,\n"
+        "  subscribeRepositorySectionExtensions,\n"
         "} from '../lib/extensions/extension-points'\n"
-        "// Registers the built-in repository section extensions on import.\n"
-        "import '../lib/extensions/built-in'",
+        "import { initializeExtensionLoader } from '../lib/extensions/plugin-loader'",
         1,
     ),
     (
@@ -74,7 +75,8 @@ EDITS = [
         "\n"
         "  private focusHistoryNeeded: boolean = false\n"
         "  private focusChangesNeeded: boolean = false\n"
-        "  private focusExtensionId: string | null = null",
+        "  private focusExtensionId: string | null = null\n"
+        "  private disposeExtensionSubscription: (() => void) | null = null",
         1,
     ),
     (
@@ -216,6 +218,37 @@ EDITS = [
     ),
     (
         "app/src/ui/repository.tsx",
+        "  public componentDidMount() {\n"
+        "    window.addEventListener('keydown', this.onGlobalKeyDown)\n"
+        "  }\n"
+        "\n"
+        "  public componentWillUnmount() {\n"
+        "    window.removeEventListener('keydown', this.onGlobalKeyDown)\n"
+        "  }",
+        "  public componentDidMount() {\n"
+        "    window.addEventListener('keydown', this.onGlobalKeyDown)\n"
+        "\n"
+        "    // Runtime repository section extensions (see lib/extensions) may be\n"
+        "    // installed while the app is running; re-render the tab bar on change\n"
+        "    // and arm the plugin loader.\n"
+        "    this.disposeExtensionSubscription = subscribeRepositorySectionExtensions(\n"
+        "      () => this.forceUpdate()\n"
+        "    )\n"
+        "    initializeExtensionLoader()\n"
+        "  }\n"
+        "\n"
+        "  public componentWillUnmount() {\n"
+        "    window.removeEventListener('keydown', this.onGlobalKeyDown)\n"
+        "\n"
+        "    if (this.disposeExtensionSubscription !== null) {\n"
+        "      this.disposeExtensionSubscription()\n"
+        "      this.disposeExtensionSubscription = null\n"
+        "    }\n"
+        "  }",
+        1,
+    ),
+    (
+        "app/src/ui/repository.tsx",
         "    if (this.focusHistoryNeeded) {\n"
         "      this.focusHistoryNeeded = false\n"
         "      this.compareSidebarRef.current?.focusHistory()\n"
@@ -272,7 +305,19 @@ EDITS = [
         "          : RepositorySectionTab.Changes",
         1,
     ),
-    # ---- F3: app-store.ts —— 按扩展声明的刷新语义处理（通用）----
+    (
+        "app/src/ui/repository.tsx",
+        "      return assertNever(selectedSection, 'Unknown repository section')",
+        "      throw new Error(`Unknown repository section: ${selectedSection}`)",
+        2,
+    ),
+    (
+        "app/src/ui/repository.tsx",
+        "import { assertNever } from '../lib/fatal-error'\n",
+        "",
+        1,
+    ),
+    # ---- F3: app-store.ts ----
     (
         "app/src/lib/stores/app-store.ts",
         "import { getConflictResolutionModelDisplay } from '../copilot/conflict-resolution-model'",
@@ -309,15 +354,76 @@ EDITS = [
         "    } else if (section === RepositorySectionTab.Changes) {",
         1,
     ),
-    # ---- F4: 样式索引引入扩展样式 ----
     (
-        "app/styles/ui/_history.scss",
-        "@import 'history/multiple_commits_selected';",
-        "@import 'history/multiple_commits_selected';\n"
-        "@import 'history/commits-filter';",
+        "app/src/lib/stores/app-store.ts",
+        "      return assertNever(section, `Unknown section: ${section}`)",
+        "      throw new Error(`Unknown section: ${section}`)",
         1,
     ),
-    # ---- F5: 菜单/快捷键由内置扩展清单驱动（通用）----
+    # ---- F4: changes 文件列表插槽（插件可替换为树形视图等）----
+    (
+        "app/src/ui/changes/filter-changes-list.tsx",
+        "import { ChangesListFilterOptions } from './changes-list-filter-options'",
+        "import { ChangesListFilterOptions } from './changes-list-filter-options'\n"
+        "import { ChangesFileViewSlot } from '../../lib/extensions/changes-file-view-slot'\n"
+        "import { FileChange } from '../../models/status'",
+        1,
+    ),
+    (
+        "app/src/ui/changes/filter-changes-list.tsx",
+        "  private onFileSelectionChanged = (items: ReadonlyArray<IChangesListItem>) => {\n"
+        "    const rows = items.map(i =>\n"
+        "      this.props.workingDirectory.findFileIndexByID(i.change.id)\n"
+        "    )\n"
+        "    this.props.onFileSelectionChanged(rows)\n"
+        "  }",
+        "  private onFileSelectionChanged = (items: ReadonlyArray<IChangesListItem>) => {\n"
+        "    const rows = items.map(i =>\n"
+        "      this.props.workingDirectory.findFileIndexByID(i.change.id)\n"
+        "    )\n"
+        "    this.props.onFileSelectionChanged(rows)\n"
+        "  }\n"
+        "\n"
+        "  /** Selection bridge for the plugin-provided changes file view. */\n"
+        "  private onChangesFileViewSelectionChanged = (\n"
+        "    files: ReadonlyArray<FileChange>\n"
+        "  ) => {\n"
+        "    const rows = files.map(f =>\n"
+        "      this.props.workingDirectory.findFileIndexByID(f.id)\n"
+        "    )\n"
+        "    this.props.onFileSelectionChanged(rows)\n"
+        "  }",
+        1,
+    ),
+    (
+        "app/src/ui/changes/filter-changes-list.tsx",
+        "        <div className=\"changes-list-container file-list filtered-changes-list\">\n"
+        "          <AugmentedSectionFilterList<IChangesListItem>",
+        "        <div className=\"changes-list-container file-list filtered-changes-list\">\n"
+        "          <ChangesFileViewSlot\n"
+        "            files={workingDirectory.files}\n"
+        "            onSelectionChanged={this.onChangesFileViewSelectionChanged}\n"
+        "            fallback={\n"
+        "          <AugmentedSectionFilterList<IChangesListItem>",
+        1,
+    ),
+    (
+        "app/src/ui/changes/filter-changes-list.tsx",
+        "            postNoResultsMessage={getNoResultsMessage(\n"
+        "              this.props.fileListFilter\n"
+        "            )}\n"
+        "          />\n"
+        "        </div>",
+        "            postNoResultsMessage={getNoResultsMessage(\n"
+        "              this.props.fileListFilter\n"
+        "            )}\n"
+        "            />\n"
+        "          }\n"
+        "        />\n"
+        "        </div>",
+        1,
+    ),
+    # ---- F6: 菜单/快捷键由插件清单驱动 ----
     (
         "app/src/models/menu-ids.ts",
         "  | 'show-changes'\n  | 'show-history'",
@@ -334,7 +440,7 @@ EDITS = [
         "app/src/main-process/menu/build-default-menu.ts",
         "import { buildTestMenu } from './build-test-menu'",
         "import { buildTestMenu } from './build-test-menu'\n"
-        "import { getExtensionMenuItems } from '../../lib/extensions/built-in-manifest'",
+        "import { getExtensionMenuItems } from '../../lib/extensions/extension-manifests'",
         1,
     ),
     (
@@ -362,25 +468,6 @@ EDITS = [
         "        click: emit(item.id as MenuEvent),\n"
         "      })),",
         1,
-    ),
-    (
-        "app/src/lib/menu-update.ts",
-        "import { MenuIDs } from '../models/menu-ids'",
-        "import { MenuIDs } from '../models/menu-ids'\n"
-        "import { extensionMenuIds } from './extensions/built-in-manifest'",
-        1,
-    ),
-    (
-        "app/src/lib/menu-update.ts",
-        "  'show-changes',\n  'show-history',",
-        "  'show-changes',\n  'show-history',\n  ...extensionMenuIds,",
-        1,  # allMenuIds
-    ),
-    (
-        "app/src/lib/menu-update.ts",
-        "    'show-changes',\n    'show-history',",
-        "    'show-changes',\n    'show-history',\n    ...extensionMenuIds,",
-        1,  # repositoryScopedIDs
     ),
     (
         "app/src/ui/app.tsx",
@@ -450,31 +537,34 @@ EDITS = [
         1,
     ),
     (
-        "app/src/ui/repository.tsx",
-        "import { assertNever } from '../lib/fatal-error'\n",
-        "",
-        1,
-    ),
-    # ---- F2b: assertNever → throw（ExtensionStart 动态化后无法静态穷尽）----
-    (
-        "app/src/ui/repository.tsx",
-        "      return assertNever(selectedSection, 'Unknown repository section')",
-        "      throw new Error(`Unknown repository section: ${selectedSection}`)",
-        2,
-    ),
-    (
-        "app/src/lib/stores/app-store.ts",
-        "      return assertNever(section, `Unknown section: ${section}`)",
-        "      throw new Error(`Unknown section: ${section}`)",
-        1,
-    ),
-    (
         "app/src/ui/app.tsx",
         "        return assertNever(name, `Unknown menu event name: ${name}`)",
         "        throw new Error(`Unknown menu event name: ${name}`)",
         1,
     ),
-    # ---- F6: 品牌名（与官方版共存；cask 分发使用）----
+    # ---- F7: main.ts 启动插件宿主 ----
+    (
+        "app/src/main-process/main.ts",
+        "import { buildDefaultMenu, getAllMenuItems } from './menu'",
+        "import { buildDefaultMenu, getAllMenuItems } from './menu'\n"
+        "import { initializeExtensionHost } from './extensions/plugin-host'",
+        1,
+    ),
+    (
+        "app/src/main-process/main.ts",
+        "  Menu.setApplicationMenu(\n"
+        "    buildDefaultMenu({\n"
+        "      selectedShell: null,",
+        "  // Discover installed plugins before the menu is built so their items\n"
+        "  // are part of the initial template.\n"
+        "  initializeExtensionHost()\n"
+        "\n"
+        "  Menu.setApplicationMenu(\n"
+        "    buildDefaultMenu({\n"
+        "      selectedShell: null,",
+        1,
+    ),
+    # ---- F8: 品牌名 ----
     (
         "app/package.json",
         '  "productName": "GitHub Desktop",',
@@ -485,7 +575,6 @@ EDITS = [
 
 
 def main() -> int:
-    # --fresh：先把 workspace 回退到基线（撤销已重放的补丁），再注入全部胶水。
     if "--fresh" in sys.argv:
         import subprocess
         # reset --hard 才能回到 HEAD（基线）；checkout -- . 只恢复到暂存区，
