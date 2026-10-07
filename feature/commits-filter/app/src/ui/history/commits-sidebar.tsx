@@ -1,17 +1,13 @@
 import * as React from 'react'
 import classNames from 'classnames'
 
-import { Commit, CommitOneLine, ICommitContext } from '../../models/commit'
-import { IRepositoryState } from '../../lib/app-state'
+import { Commit, ICommitContext } from '../../models/commit'
 import { CommitList } from './commit-list'
-import { Repository } from '../../models/repository'
-import { Dispatcher, defaultErrorHandler } from '../dispatcher'
+import { defaultErrorHandler } from '../dispatcher'
 import { TextBox } from '../lib/text-box'
 import { Select } from '../lib/select'
 import { Button } from '../lib/button'
-import { Account } from '../../models/account'
 import { PopupType } from '../../models/popup'
-import { Emoji } from '../../lib/emoji'
 import { ThrottledScheduler } from '../lib/throttled-scheduler'
 import { formatNumber } from '../../lib/format-number'
 import { Octicon } from '../octicons'
@@ -19,6 +15,7 @@ import * as octicons from '../octicons/octicons.generated'
 import { getUniqueCoauthorsAsAuthors } from '../../lib/unique-coauthors-as-authors'
 import { getSquashedCommitDescription } from '../../lib/squash/squashed-commit-description'
 import { doMergeCommitsExistAfterCommit } from '../../lib/git'
+import { IRepositorySectionContext } from '../../lib/extensions/extension-points'
 import {
   EmptyCommitFilter,
   ICommitFilter,
@@ -28,31 +25,15 @@ import {
   isValidDateString,
 } from './commits-filter-logic'
 
-interface ICommitsSidebarProps {
-  readonly repository: Repository
-
-  /** The full repository state; the commit data is shared with History. */
-  readonly state: IRepositoryState
-
-  readonly dispatcher: Dispatcher
-  readonly emoji: Map<string, Emoji>
-  readonly accounts: ReadonlyArray<Account>
-
-  readonly onRevertCommit: (commit: Commit) => void
-  readonly onAmendCommit: (commit: Commit, isLocalCommit: boolean) => void
-  readonly onViewCommitOnGitHub: (sha: string) => void
-  readonly onCherryPick: (
-    repository: Repository,
-    commits: ReadonlyArray<CommitOneLine>
-  ) => void
-
-  readonly askForConfirmationOnCheckoutCommit: boolean
-  readonly preferAbsoluteDates: boolean
-}
-
 interface ICommitsSidebarState {
   /** The filter currently applied to the commit list. */
   readonly filter: ICommitFilter
+
+  /**
+   * Whether the advanced filters (description, author, date range) are
+   * expanded. Collapsed by default so the tab leads with a single search box.
+   */
+  readonly expanded: boolean
 }
 
 /** If we're within this many rows from the bottom, load the next history batch. */
@@ -61,26 +42,26 @@ const CloseToBottomThreshold = 10
 const AllAuthorsValue = ''
 
 /**
- * The sidebar of the Commits tab: the history commit list of the current
- * branch, extended with client-side filtering (by author, commit message,
- * description, and author date range).
+ * The "Commits" repository section extension: the history commit list of the
+ * current branch, extended with client-side filtering (by author, commit
+ * message, description, and author date range).
  *
  * The list itself is the very same `CommitList` used by the History tab, so
  * selection, context menus, keyboard navigation and pagination behave exactly
  * like they do there.
  */
 export class CommitsSidebar extends React.Component<
-  ICommitsSidebarProps,
+  IRepositorySectionContext,
   ICommitsSidebarState
 > {
   private readonly commitListRef = React.createRef<CommitList>()
   private readonly loadChangedFilesScheduler = new ThrottledScheduler(200)
   private loadingMoreCommitsPromise: Promise<void> | null = null
 
-  public constructor(props: ICommitsSidebarProps) {
+  public constructor(props: IRepositorySectionContext) {
     super(props)
 
-    this.state = { filter: EmptyCommitFilter }
+    this.state = { filter: EmptyCommitFilter, expanded: false }
   }
 
   public componentWillMount() {
@@ -89,8 +70,13 @@ export class CommitsSidebar extends React.Component<
     this.props.dispatcher.initializeCompare(this.props.repository)
   }
 
-  public focusCommits() {
+  /** Focuses the commit list (used by the "Show Commits" menu accelerator). */
+  public focus() {
     this.commitListRef.current?.focus()
+  }
+
+  private onToggleExpanded = () => {
+    this.setState(prevState => ({ expanded: !prevState.expanded }))
   }
 
   private onFilterChanged = (update: Partial<ICommitFilter>) => {
@@ -233,30 +219,17 @@ export class CommitsSidebar extends React.Component<
     })
   }
 
-  private renderFilterBar(
+  private renderAdvancedFilters(
     authors: ReadonlyArray<{ name: string; email: string }>,
-    filter: ICommitFilter,
-    filtersActive: boolean,
-    matchingCount: number,
-    totalCount: number
+    filter: ICommitFilter
   ) {
-    const messageText = filter.messageTerms.join(' ')
     const dateFromInvalid =
       filter.dateFrom !== null && !isValidDateString(filter.dateFrom)
     const dateToInvalid =
       filter.dateTo !== null && !isValidDateString(filter.dateTo)
 
     return (
-      <div className="commits-filter">
-        <TextBox
-          className="commits-filter-field"
-          placeholder={__DARWIN__ ? 'Filter by Message' : 'Filter by message'}
-          ariaLabel={__DARWIN__ ? 'Filter by Message' : 'Filter by message'}
-          value={messageText}
-          displayClearButton={messageText.length > 0}
-          onValueChanged={this.onMessageTextChanged}
-        />
-
+      <>
         <TextBox
           className="commits-filter-field"
           placeholder={
@@ -321,6 +294,56 @@ export class CommitsSidebar extends React.Component<
         >
           {__DARWIN__ ? 'Invalid Date' : 'Invalid date'} — YYYY-MM-DD
         </div>
+      </>
+    )
+  }
+
+  private renderFilterBar(
+    authors: ReadonlyArray<{ name: string; email: string }>,
+    filter: ICommitFilter,
+    filtersActive: boolean,
+    hiddenFiltersActive: boolean,
+    matchingCount: number,
+    totalCount: number
+  ) {
+    const messageText = filter.messageTerms.join(' ')
+    const { expanded } = this.state
+
+    return (
+      <div className="commits-filter">
+        <div className="commits-filter-row commits-filter-primary">
+          <Button
+            className={classNames('commits-filter-toggle', {
+              selected: hiddenFiltersActive && !expanded,
+            })}
+            ariaExpanded={expanded}
+            tooltip={
+              expanded
+                ? __DARWIN__
+                  ? 'Hide Advanced Filters'
+                  : 'Hide advanced filters'
+                : __DARWIN__
+                ? 'Show Advanced Filters'
+                : 'Show advanced filters'
+            }
+            onClick={this.onToggleExpanded}
+          >
+            <Octicon
+              symbol={expanded ? octicons.chevronUp : octicons.chevronDown}
+            />
+          </Button>
+
+          <TextBox
+            className="commits-filter-field"
+            placeholder={__DARWIN__ ? 'Filter by Message' : 'Filter by message'}
+            ariaLabel={__DARWIN__ ? 'Filter by Message' : 'Filter by message'}
+            value={messageText}
+            displayClearButton={messageText.length > 0}
+            onValueChanged={this.onMessageTextChanged}
+          />
+        </div>
+
+        {expanded ? this.renderAdvancedFilters(authors, filter) : null}
 
         <div className="commits-filter-row commits-filter-summary">
           <span className="commits-filter-count" aria-live="polite">
@@ -369,6 +392,15 @@ export class CommitsSidebar extends React.Component<
     const matchingSHAs = matchingCommits.map(c => c.sha)
     const authors = getCommitAuthors(commits)
 
+    // Filters that are collapsed right now but still narrowing the list.
+    const hiddenFiltersActive =
+      filtersActive &&
+      !this.state.expanded &&
+      (filter.authorEmails.length > 0 ||
+        filter.descriptionTerm.trim().length > 0 ||
+        filter.dateFrom !== null ||
+        filter.dateTo !== null)
+
     // Follows the native blankslate pattern (icon + title + description +
     // action) used by e.g. the Changes interstitial.
     const emptyListMessage = filtersActive
@@ -391,11 +423,16 @@ export class CommitsSidebar extends React.Component<
       : 'No history'
 
     return (
-      <div id="commits-view" role="tabpanel" aria-labelledby="commits-tab">
+      <div
+        id="commits-view"
+        role="tabpanel"
+        aria-labelledby="extension-tab-commits-filter"
+      >
         {this.renderFilterBar(
           authors,
           filter,
           filtersActive,
+          hiddenFiltersActive,
           matchingCommits.length,
           commits.length
         )}

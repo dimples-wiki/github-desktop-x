@@ -1,0 +1,220 @@
+diff --git a/app/src/ui/repository.tsx b/app/src/ui/repository.tsx
+index d716e31..329989a 100644
+--- a/app/src/ui/repository.tsx
++++ b/app/src/ui/repository.tsx
+@@ -8,6 +8,15 @@ import { NoChanges } from './changes/no-changes'
+ import { MultipleSelection } from './changes/multiple-selection'
+ import { FilesChangedBadge } from './changes/files-changed-badge'
+ import { SelectedCommits, CompareSidebar } from './history'
++import {
++  getExtensionForSection,
++  getRepositorySectionExtensions,
++  getSectionForExtension,
++  getTabIdForExtension,
++  sectionForExtensionIndex,
++} from '../lib/extensions/extension-points'
++// Registers the built-in repository section extensions on import.
++import '../lib/extensions/built-in'
+ import { Resizable } from './resizable'
+ import { TabBar } from './tab-bar'
+ import {
+@@ -19,7 +28,6 @@ import {
+ } from '../lib/app-state'
+ import { Dispatcher } from './dispatcher'
+ import { IssuesStore, GitHubUserStore } from '../lib/stores'
+-import { assertNever } from '../lib/fatal-error'
+ import { Account } from '../models/account'
+ import { FocusContainer } from './lib/focus-container'
+ import { ImageDiffType } from '../models/diff'
+@@ -153,6 +161,10 @@ const enum Tab {
+   History = 1,
+ }
+ 
++// Extension tabs are rendered after the built-in ones; their tab value
++// is ExtensionTabBase + index into the extension registry.
++const ExtensionTabBase = 2
++
+ export class RepositoryView extends React.Component<
+   IRepositoryViewProps,
+   IRepositoryViewState
+@@ -166,9 +178,14 @@ export class RepositoryView extends React.Component<
+ 
+   private readonly changesSidebarRef = React.createRef<ChangesSidebar>()
+   private readonly compareSidebarRef = React.createRef<CompareSidebar>()
++  private readonly extensionSidebarRefs = new Map<
++    string,
++    React.RefObject<any>
++  >()
+ 
+   private focusHistoryNeeded: boolean = false
+   private focusChangesNeeded: boolean = false
++  private focusExtensionId: string | null = null
+ 
+   public constructor(props: IRepositoryViewProps) {
+     super(props)
+@@ -187,6 +204,21 @@ export class RepositoryView extends React.Component<
+     this.focusChangesNeeded = true
+   }
+ 
++  public setFocusExtensionNeeded(id: string): void {
++    this.focusExtensionId = id
++  }
++
++  private getExtensionSidebarRef(id: string) {
++    let ref = this.extensionSidebarRefs.get(id)
++
++    if (ref === undefined) {
++      ref = React.createRef<any>()
++      this.extensionSidebarRefs.set(id, ref)
++    }
++
++    return ref
++  }
++
+   public scrollCompareListToTop(): void {
+     this.forceCompareListScrollTop = true
+ 
+@@ -215,10 +247,16 @@ export class RepositoryView extends React.Component<
+   }
+ 
+   private renderTabs(): JSX.Element {
++    const extensions = getRepositorySectionExtensions()
+     const selectedTab =
+       this.props.state.selectedSection === RepositorySectionTab.Changes
+         ? Tab.Changes
+-        : Tab.History
++        : this.props.state.selectedSection === RepositorySectionTab.History
++        ? Tab.History
++        : ExtensionTabBase +
++          extensions.findIndex(
++            e => getSectionForExtension(e) === this.props.state.selectedSection
++          )
+ 
+     return (
+       <TabBar selectedIndex={selectedTab} onTabClicked={this.onTabClicked}>
+@@ -230,6 +268,16 @@ export class RepositoryView extends React.Component<
+         <div className="with-indicator" id="history-tab">
+           <span>History</span>
+         </div>
++
++        {extensions.map(extension => (
++          <div
++            key={extension.id}
++            className="with-indicator"
++            id={getTabIdForExtension(extension)}
++          >
++            <span>{extension.title}</span>
++          </div>
++        ))}
+       </TabBar>
+     )
+   }
+@@ -384,6 +432,36 @@ export class RepositoryView extends React.Component<
+     )
+   }
+ 
++  private renderExtensionSidebar(): JSX.Element {
++    const section = this.props.state.selectedSection
++    const extension = getExtensionForSection(section)
++
++    if (extension === undefined) {
++      throw new Error(`Unknown repository section: ${section}`)
++    }
++
++    const Sidebar = extension.sidebarComponent
++
++    return (
++      <Sidebar
++        ref={this.getExtensionSidebarRef(extension.id)}
++        repository={this.props.repository}
++        state={this.props.state}
++        dispatcher={this.props.dispatcher}
++        emoji={this.props.emoji}
++        accounts={this.props.accounts}
++        onRevertCommit={this.onRevertCommit}
++        onAmendCommit={this.onAmendCommit}
++        onViewCommitOnGitHub={this.props.onViewCommitOnGitHub}
++        onCherryPick={this.props.onCherryPick}
++        askForConfirmationOnCheckoutCommit={
++          this.props.askForConfirmationOnCheckoutCommit
++        }
++        preferAbsoluteDates={this.props.preferAbsoluteDates}
++      />
++    )
++  }
++
+   private renderSidebarContents(): JSX.Element {
+     const selectedSection = this.props.state.selectedSection
+ 
+@@ -391,8 +469,10 @@ export class RepositoryView extends React.Component<
+       return this.renderChangesSidebar()
+     } else if (selectedSection === RepositorySectionTab.History) {
+       return this.renderCompareSidebar()
++    } else if (getExtensionForSection(selectedSection) !== undefined) {
++      return this.renderExtensionSidebar()
+     } else {
+-      return assertNever(selectedSection, 'Unknown repository section')
++      throw new Error(`Unknown repository section: ${selectedSection}`)
+     }
+   }
+ 
+@@ -637,8 +717,11 @@ export class RepositoryView extends React.Component<
+       return this.renderContentForChanges()
+     } else if (selectedSection === RepositorySectionTab.History) {
+       return this.renderContentForHistory()
++    } else if (getExtensionForSection(selectedSection) !== undefined) {
++      // Extension sections share the commit details/diff view with History
++      return this.renderContentForHistory()
+     } else {
+-      return assertNever(selectedSection, 'Unknown repository section')
++      throw new Error(`Unknown repository section: ${selectedSection}`)
+     }
+   }
+ 
+@@ -682,6 +765,12 @@ export class RepositoryView extends React.Component<
+       this.focusHistoryNeeded = false
+       this.compareSidebarRef.current?.focusHistory()
+     }
++
++    if (this.focusExtensionId !== null) {
++      const id = this.focusExtensionId
++      this.focusExtensionId = null
++      this.extensionSidebarRefs.get(id)?.current?.focus()
++    }
+   }
+ 
+   private onGlobalKeyDown = (event: KeyboardEvent) => {
+@@ -703,10 +792,20 @@ export class RepositoryView extends React.Component<
+   }
+ 
+   private changeTab() {
+-    const section =
+-      this.props.state.selectedSection === RepositorySectionTab.History
+-        ? RepositorySectionTab.Changes
+-        : RepositorySectionTab.History
++    const { selectedSection } = this.props.state
++    const extensions = getRepositorySectionExtensions()
++    let section: RepositorySectionTab
++
++    if (selectedSection === RepositorySectionTab.Changes) {
++      section = RepositorySectionTab.History
++    } else if (
++      selectedSection === RepositorySectionTab.History &&
++      extensions.length > 0
++    ) {
++      section = getSectionForExtension(extensions[0])
++    } else {
++      section = RepositorySectionTab.Changes
++    }
+ 
+     this.props.dispatcher.changeRepositorySection(
+       this.props.repository,
+@@ -718,6 +817,8 @@ export class RepositoryView extends React.Component<
+     const section =
+       tab === Tab.History
+         ? RepositorySectionTab.History
++        : tab >= ExtensionTabBase
++        ? sectionForExtensionIndex(tab - ExtensionTabBase)
+         : RepositorySectionTab.Changes
+ 
+     this.props.dispatcher.changeRepositorySection(

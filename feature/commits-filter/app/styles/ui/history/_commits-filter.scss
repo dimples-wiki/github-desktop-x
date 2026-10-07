@@ -32,6 +32,35 @@
     gap: var(--spacing-half);
   }
 
+  // The primary filter row: an expand/collapse toggle for the advanced
+  // filters + the message search box. Mirrors the joined
+  // `.filter-box-container` pattern used by the changes list filter.
+  .commits-filter-primary {
+    .commits-filter-toggle {
+      flex: initial;
+
+      .octicon {
+        fill: var(--text-secondary-color);
+      }
+
+      &:hover .octicon {
+        fill: var(--text-color);
+      }
+
+      // Collapsed advanced filters are still active: highlight the toggle so
+      // the narrowing doesn't happen invisibly.
+      &.selected {
+        border-color: var(--box-border-accent-color);
+        color: var(--box-selected-active-text-color);
+        background: var(--box-selected-active-background-color);
+
+        .octicon {
+          fill: var(--color-accent-fg, var(--text-color));
+        }
+      }
+    }
+  }
+
   .commits-filter-author {
     flex: 1;
 

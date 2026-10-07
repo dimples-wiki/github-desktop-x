@@ -1,0 +1,42 @@
+diff --git a/app/src/lib/stores/app-store.ts b/app/src/lib/stores/app-store.ts
+index e8b8de9..9bb6d18 100644
+--- a/app/src/lib/stores/app-store.ts
++++ b/app/src/lib/stores/app-store.ts
+@@ -36,6 +36,7 @@ import {
+   parseModelKey,
+ } from '../copilot/byok'
+ import { getConflictResolutionModelDisplay } from '../copilot/conflict-resolution-model'
++import { getExtensionForSection } from '../extensions/extension-points'
+ import type {
+   CopilotModelRequest,
+   CopilotProviderConfig,
+@@ -3357,6 +3358,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
+ 
+     if (selectedSection === RepositorySectionTab.History) {
+       await this.refreshHistorySection(repository)
++    } else if (
++      getExtensionForSection(selectedSection)?.refreshOnActivate === 'history'
++    ) {
++      await this.refreshHistorySection(repository)
+     } else if (selectedSection === RepositorySectionTab.Changes) {
+       await this.refreshChangesSection(repository, {
+         includingStatus: true,
+@@ -4107,13 +4112,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
+ 
+     if (section === RepositorySectionTab.History) {
+       refreshSectionPromise = this.refreshHistorySection(repository)
++    } else if (
++      getExtensionForSection(section)?.refreshOnActivate === 'history'
++    ) {
++      refreshSectionPromise = this.refreshHistorySection(repository)
+     } else if (section === RepositorySectionTab.Changes) {
+       refreshSectionPromise = this.refreshChangesSection(repository, {
+         includingStatus: false,
+         clearPartialState: false,
+       })
+     } else {
+-      return assertNever(section, `Unknown section: ${section}`)
++      throw new Error(`Unknown section: ${section}`)
+     }
+ 
+     await Promise.all([

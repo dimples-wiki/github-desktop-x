@@ -1,0 +1,146 @@
+diff --git a/app/src/lib/menu-update.ts b/app/src/lib/menu-update.ts
+index 373ffae..8365f8b 100644
+--- a/app/src/lib/menu-update.ts
++++ b/app/src/lib/menu-update.ts
+@@ -1,4 +1,5 @@
+ import { MenuIDs } from '../models/menu-ids'
++import { extensionMenuIds } from './extensions/built-in-manifest'
+ import { merge } from './merge'
+ import { IAppState, SelectionType } from '../lib/app-state'
+ import {
+@@ -126,6 +127,7 @@ const allMenuIds: ReadonlyArray<MenuIDs> = [
+   'create-branch',
+   'show-changes',
+   'show-history',
++  ...extensionMenuIds,
+   'show-repository-list',
+   'show-branches-list',
+   'open-working-directory',
+@@ -246,6 +248,7 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
+     'go-to-commit-message',
+     'show-changes',
+     'show-history',
++    ...extensionMenuIds,
+     'show-branches-list',
+     'show-worktrees-list',
+     'open-external-editor',
+diff --git a/app/src/main-process/menu/build-default-menu.ts b/app/src/main-process/menu/build-default-menu.ts
+index cd5c20c..d539c46 100644
+--- a/app/src/main-process/menu/build-default-menu.ts
++++ b/app/src/main-process/menu/build-default-menu.ts
+@@ -9,6 +9,7 @@ import { MenuLabelsEvent } from '../../models/menu-labels'
+ import * as ipcWebContents from '../ipc-webcontents'
+ import { mkdir } from 'fs/promises'
+ import { buildTestMenu } from './build-test-menu'
++import { getExtensionMenuItems } from '../../lib/extensions/built-in-manifest'
+ 
+ const createPullRequestLabel = __DARWIN__
+   ? 'Create Pull Request'
+@@ -191,6 +192,14 @@ export function buildDefaultMenuTemplate({
+         accelerator: 'CmdOrCtrl+2',
+         click: emit('show-history'),
+       },
++      // Menu items contributed by repository section extensions
++      // (see lib/extensions).
++      ...getExtensionMenuItems().map(item => ({
++        label: __DARWIN__ ? item.label : item.label.replace('Show ', 'Show &'),
++        id: item.id,
++        accelerator: item.accelerator,
++        click: emit(item.id as MenuEvent),
++      })),
+       {
+         label: __DARWIN__ ? 'Show Repository List' : 'Repository &list',
+         id: 'show-repository-list',
+diff --git a/app/src/main-process/menu/menu-event.ts b/app/src/main-process/menu/menu-event.ts
+index aa18eac..b43e37f 100644
+--- a/app/src/main-process/menu/menu-event.ts
++++ b/app/src/main-process/menu/menu-event.ts
+@@ -5,6 +5,7 @@ export type MenuEvent =
+   | 'fetch'
+   | 'show-changes'
+   | 'show-history'
++  | `show-extension-${string}`
+   | 'add-local-repository'
+   | 'create-branch'
+   | 'show-branches'
+diff --git a/app/src/models/menu-ids.ts b/app/src/models/menu-ids.ts
+index 4365261..1918470 100644
+--- a/app/src/models/menu-ids.ts
++++ b/app/src/models/menu-ids.ts
+@@ -22,6 +22,7 @@ export type MenuIDs =
+   | 'create-branch'
+   | 'show-changes'
+   | 'show-history'
++  | `show-extension-${string}`
+   | 'show-repository-list'
+   | 'show-branches-list'
+   | 'open-working-directory'
+diff --git a/app/src/ui/app.tsx b/app/src/ui/app.tsx
+index 568219f..33b24fd 100644
+--- a/app/src/ui/app.tsx
++++ b/app/src/ui/app.tsx
+@@ -27,6 +27,10 @@ import {
+   isWindowsAndNoLongerSupportedByElectron,
+ } from '../lib/get-os'
+ import { MenuEvent, isTestMenuEvent } from '../main-process/menu'
++import {
++  getRepositorySectionExtensionById,
++  getSectionForExtension,
++} from '../lib/extensions/extension-points'
+ import {
+   Repository,
+   getGitHubHtmlUrl,
+@@ -452,6 +456,10 @@ export class App extends React.Component<IAppProps, IAppState> {
+       return
+     }
+ 
++    if (name.startsWith('show-extension-')) {
++      return this.showExtension(name.slice('show-extension-'.length))
++    }
++
+     switch (name) {
+       case 'push':
+         return this.push()
+@@ -564,7 +572,7 @@ export class App extends React.Component<IAppProps, IAppState> {
+             this.state.emoji
+           )
+         }
+-        return assertNever(name, `Unknown menu event name: ${name}`)
++        throw new Error(`Unknown menu event name: ${name}`)
+     }
+   }
+ 
+@@ -916,6 +924,33 @@ export class App extends React.Component<IAppProps, IAppState> {
+     }
+   }
+ 
++  private async showExtension(extensionId: string) {
++    const state = this.state.selectedState
++    if (state == null || state.type !== SelectionType.Repository) {
++      return
++    }
++
++    const extension = getRepositorySectionExtensionById(extensionId)
++    if (extension === undefined) {
++      return
++    }
++
++    await this.props.dispatcher.closeCurrentFoldout()
++
++    if (extension.refreshOnActivate === 'history') {
++      await this.props.dispatcher.initializeCompare(state.repository, {
++        kind: HistoryTabMode.History,
++      })
++    }
++
++    await this.props.dispatcher.changeRepositorySection(
++      state.repository,
++      getSectionForExtension(extension)
++    )
++
++    this.repositoryViewRef.current?.setFocusExtensionNeeded(extension.id)
++  }
++
+   private async showChanges(shouldFocusChanges: boolean) {
+     const state = this.state.selectedState
+     if (state == null || state.type !== SelectionType.Repository) {

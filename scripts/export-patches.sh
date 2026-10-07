@@ -14,16 +14,16 @@ PATCHES="$ROOT/patches"
 
 group_files() {
   case "$1" in
-    0001-add-commits-to-repository-section-tab)
+    0001-extension-framework-core)
       echo "app/src/lib/app-state.ts" ;;
-    0002-register-commits-tab-in-repository-view)
+    0002-extension-framework-repository-view)
       echo "app/src/ui/repository.tsx" ;;
-    0003-handle-commits-section-in-app-store)
+    0003-extension-framework-app-store)
       echo "app/src/lib/stores/app-store.ts" ;;
     0004-import-commits-filter-styles)
       echo "app/styles/ui/_history.scss" ;;
-    0005-add-show-commits-menu-and-shortcut)
-      echo "app/src/models/menu-ids.ts app/src/main-process/menu/menu-event.ts app/src/main-process/menu/build-default-menu.ts app/src/ui/app.tsx app/src/lib/menu-update.ts" ;;
+    0005-extension-framework-menu-shortcut)
+      echo "app/src/models/menu-ids.ts app/src/main-process/menu/menu-event.ts app/src/main-process/menu/build-default-menu.ts app/src/lib/menu-update.ts app/src/ui/app.tsx" ;;
     0006-rebrand-app-for-coexistence)
       echo "app/package.json" ;;
     *) return 1 ;;
@@ -42,11 +42,11 @@ mkdir -p "$PATCHES"
 rm -f "$PATCHES"/*.patch
 : > "$PATCHES/series.txt"
 
-for name in 0001-add-commits-to-repository-section-tab \
-            0002-register-commits-tab-in-repository-view \
-            0003-handle-commits-section-in-app-store \
+for name in 0001-extension-framework-core \
+            0002-extension-framework-repository-view \
+            0003-extension-framework-app-store \
             0004-import-commits-filter-styles \
-            0005-add-show-commits-menu-and-shortcut \
+            0005-extension-framework-menu-shortcut \
             0006-rebrand-app-for-coexistence; do
   files="$(group_files "$name")"
   if git diff --cached --quiet -- $files; then

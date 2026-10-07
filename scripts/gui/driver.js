@@ -145,7 +145,8 @@ async function dismissMoveToApplicationsDialog(page) {
 // ── 标签页切换 ─────────────────────────────────────────────────────
 
 async function openCommits(page) {
-  await page.click('#commits-tab')
+  // 插件框架下 tab id 由 getTabIdForExtension 生成
+  await page.click('#extension-tab-commits-filter')
   await page.waitForSelector('#commits-view', { state: 'visible' })
 }
 
@@ -159,7 +160,30 @@ async function openChanges(page) {
 
 // ── 筛选操作（Commits 标签页） ─────────────────────────────────────
 
+/** 展开高级筛选（description/author/dates 默认折叠） */
+async function expandFilters(page) {
+  const expanded = await page
+    .locator('.commits-filter-toggle')
+    .getAttribute('aria-expanded')
+  if (expanded !== 'true') {
+    await page.click('.commits-filter-toggle')
+    await page.waitForTimeout(200)
+  }
+}
+
+/** 收起高级筛选 */
+async function collapseFilters(page) {
+  const expanded = await page
+    .locator('.commits-filter-toggle')
+    .getAttribute('aria-expanded')
+  if (expanded === 'true') {
+    await page.click('.commits-filter-toggle')
+    await page.waitForTimeout(200)
+  }
+}
+
 async function setAuthorFilter(page, authorName) {
+  await expandFilters(page)
   await page
     .locator('.commits-filter-author select')
     .selectOption({ label: authorName })
@@ -170,10 +194,12 @@ async function setMessageFilter(page, text) {
 }
 
 async function setDescriptionFilter(page, text) {
+  await expandFilters(page)
   await page.fill('input[aria-label="Filter by Description"]', text)
 }
 
 async function setDateRangeFilter(page, from, to) {
+  await expandFilters(page)
   if (from !== undefined && from !== null) {
     await page.fill('input[aria-label="From date"]', from)
   }
@@ -238,6 +264,8 @@ module.exports = {
   launch,
   ensureFirstRunDone,
   openCommits,
+  expandFilters,
+  collapseFilters,
   openHistory,
   openChanges,
   setAuthorFilter,

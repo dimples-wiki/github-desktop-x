@@ -28,11 +28,22 @@ async function waitListLoaded(page) {
   console.log('[capture] commits count =', await driver.getResultCountText(page))
   await driver.screenshot(page, '02-commits-default')
 
+  // 15 展开高级筛选后的完整筛选栏（无筛选）
+  await driver.expandFilters(page)
+  await page.waitForTimeout(300)
+  await driver.screenshot(page, '15-expanded-filters')
+
   // 03 按提交人筛选：Yoko Tanaka
   await driver.setAuthorFilter(page, 'Yoko Tanaka')
   await page.waitForTimeout(600)
   console.log('[capture] author=Yoko:', await driver.getResultCountText(page))
   await driver.screenshot(page, '03-filter-author')
+
+  // 16 收起高级筛选：隐藏中的筛选仍生效，toggle 按钮高亮提示
+  await driver.collapseFilters(page)
+  await page.waitForTimeout(300)
+  console.log('[capture] collapsed w/ hidden filter:', await driver.getResultCountText(page))
+  await driver.screenshot(page, '16-collapsed-hidden-active')
 
   // 04 作者 + message 模糊搜索组合："fix"
   await driver.setMessageFilter(page, 'fix')

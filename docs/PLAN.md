@@ -29,12 +29,11 @@ dimple-github-desktop/               ← 父仓库（我们的二开仓库）
 ### 为什么这样分层（可升级性）
 
 - `upstream/` 保持**零污染**（detached 在官方 tag 上）；
-- 对上游的所有修改收敛为 `patches/` 里的一条条胶水补丁，每条补丁只碰 1~2 个文件、只做加法或一行替换；
-- 全部业务逻辑/组件/样式都在 `feature/`（父仓库自有文件），上游更新时：
-  1. 升级 submodule 到新 tag；
-  2. 重放 `git am`/`git apply` 补丁，冲突只可能出现在胶水点（预期是几行级别）；
-  3. `assemble.sh` 重新组装 workspace 即可。
-- 「插件化」的实质：胶水层 = **注册点**（把 Commits 标签页挂进 TabBar 与路由），功能层 = 自包含模块。未来新增功能照抄此模式。
+- 上游侧改动全部收敛为**通用插件框架接线**：`framework/app/src/lib/extensions/`（`extension-points.ts` 注册 API + `built-in-manifest.ts` 纯数据清单，主进程/渲染进程共用）随基线注入；`patches/` 只含「上游文件如何消费扩展点」的通用改动（动态 tab 渲染/路由/聚焦、section 刷新语义、清单驱动菜单）——**不含任何 Commits 业务逻辑**；
+- 全部业务逻辑/组件/样式都在 `feature/`，以 `registerRepositorySection({ id, title, sidebarComponent, refreshOnActivate })` **自注册为插件**（`app/src/lib/extensions/built-in/`，overlay 注入，不进补丁）；
+- 上游更新时：升级 submodule → 重放补丁（冲突只可能出现在框架接线点）→ `assemble.sh` 重组装；
+- **新增第二个插件** = manifest 加一行 + `built-in/` 加一个模块 + `register()` 调用，上游侧零改动；
+- 「插件化」的实质：胶水层 = **扩展点框架**（对上游通用），功能层 = 自注册插件（业务自包含）。
 
 ### 组装流程（scripts/assemble.sh）
 

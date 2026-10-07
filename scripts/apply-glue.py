@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""在 workspace 中应用 Commits 标签页的最小胶水改动。
+"""在 workspace 中应用「插件框架接线」胶水改动。
 
-每个锚点(old)必须恰好出现一次，否则中止且不落盘，保证胶水补丁的确定性。
-胶水改动随后由 export-patches.sh 导出为 patches/*.patch —— 本脚本仅用于开发期
-生成补丁，正式组装只依赖 patches/。
+设计：上游侧的改动全部是**通用**的扩展点接线（不包含任何 Commits 业务逻辑）：
+  - RepositorySectionTab 枚举提供 ExtensionStart 基值
+  - repository.tsx 动态渲染/路由/聚焦扩展 tab
+  - app-store.ts 按扩展声明的刷新语义处理 section 切换/刷新
+  - 菜单（View / ids / events / state）由内置扩展清单驱动
+业务功能本身通过 feature/<plugin>/app/src/lib/extensions/built-in/ 注册（overlay，不进补丁）。
+
+每个锚点(old)必须恰好出现期望次数，否则中止且不落盘。
+`--fresh` 先把 workspace 回退到基线（撤销已重放的补丁）再注入，用于
+「修改胶水 → 重导补丁」的开发流。
 """
 import sys
 from pathlib import Path
@@ -12,25 +19,43 @@ WS = Path(__file__).resolve().parent.parent / "workspace"
 
 # (相对路径, old, new, 期望出现次数)
 EDITS = [
-    # ---- G1: RepositorySectionTab 枚举新增 Commits ----
+    # ---- F1: RepositorySectionTab 提供 ExtensionStart 基值 ----
     (
         "app/src/lib/app-state.ts",
         "export enum RepositorySectionTab {\n  Changes,\n  History,\n}",
-        "export enum RepositorySectionTab {\n  Changes,\n  History,\n  Commits,\n}",
+        "export enum RepositorySectionTab {\n  Changes,\n  History,\n"
+        "  /**\n"
+        "   * Base value for dynamically assigned repository section extensions\n"
+        "   * (see lib/extensions/extension-points).\n"
+        "   */\n"
+        "  ExtensionStart = 1000,\n"
+        "}",
         1,
     ),
-    # ---- G2: repository.tsx —— 导入、Tab 枚举、ref/焦点、TabBar、路由 ----
+    # ---- F2: repository.tsx —— 扩展 tab 的动态渲染/路由/聚焦（通用接线）----
     (
         "app/src/ui/repository.tsx",
         "import { SelectedCommits, CompareSidebar } from './history'",
         "import { SelectedCommits, CompareSidebar } from './history'\n"
-        "import { CommitsSidebar } from './history/commits-sidebar'",
+        "import {\n"
+        "  getExtensionForSection,\n"
+        "  getRepositorySectionExtensions,\n"
+        "  getSectionForExtension,\n"
+        "  getTabIdForExtension,\n"
+        "  sectionForExtensionIndex,\n"
+        "} from '../lib/extensions/extension-points'\n"
+        "// Registers the built-in repository section extensions on import.\n"
+        "import '../lib/extensions/built-in'",
         1,
     ),
     (
         "app/src/ui/repository.tsx",
         "const enum Tab {\n  Changes = 0,\n  History = 1,\n}",
-        "const enum Tab {\n  Changes = 0,\n  History = 1,\n  Commits = 2,\n}",
+        "const enum Tab {\n  Changes = 0,\n  History = 1,\n}\n"
+        "\n"
+        "// Extension tabs are rendered after the built-in ones; their tab value\n"
+        "// is ExtensionTabBase + index into the extension registry.\n"
+        "const ExtensionTabBase = 2",
         1,
     ),
     (
@@ -42,11 +67,14 @@ EDITS = [
         "  private focusChangesNeeded: boolean = false",
         "  private readonly changesSidebarRef = React.createRef<ChangesSidebar>()\n"
         "  private readonly compareSidebarRef = React.createRef<CompareSidebar>()\n"
-        "  private readonly commitsSidebarRef = React.createRef<CommitsSidebar>()\n"
+        "  private readonly extensionSidebarRefs = new Map<\n"
+        "    string,\n"
+        "    React.RefObject<any>\n"
+        "  >()\n"
         "\n"
         "  private focusHistoryNeeded: boolean = false\n"
         "  private focusChangesNeeded: boolean = false\n"
-        "  private focusCommitsNeeded: boolean = false",
+        "  private focusExtensionId: string | null = null",
         1,
     ),
     (
@@ -58,8 +86,19 @@ EDITS = [
         "    this.focusChangesNeeded = true\n"
         "  }\n"
         "\n"
-        "  public setFocusCommitsNeeded(): void {\n"
-        "    this.focusCommitsNeeded = true\n"
+        "  public setFocusExtensionNeeded(id: string): void {\n"
+        "    this.focusExtensionId = id\n"
+        "  }\n"
+        "\n"
+        "  private getExtensionSidebarRef(id: string) {\n"
+        "    let ref = this.extensionSidebarRefs.get(id)\n"
+        "\n"
+        "    if (ref === undefined) {\n"
+        "      ref = React.createRef<any>()\n"
+        "      this.extensionSidebarRefs.set(id, ref)\n"
+        "    }\n"
+        "\n"
+        "    return ref\n"
         "  }",
         1,
     ),
@@ -69,12 +108,17 @@ EDITS = [
         "      this.props.state.selectedSection === RepositorySectionTab.Changes\n"
         "        ? Tab.Changes\n"
         "        : Tab.History",
+        "    const extensions = getRepositorySectionExtensions()\n"
         "    const selectedTab =\n"
         "      this.props.state.selectedSection === RepositorySectionTab.Changes\n"
         "        ? Tab.Changes\n"
-        "        : this.props.state.selectedSection === RepositorySectionTab.Commits\n"
-        "          ? Tab.Commits\n"
-        "          : Tab.History",
+        "        : this.props.state.selectedSection === RepositorySectionTab.History\n"
+        "          ? Tab.History\n"
+        "          : ExtensionTabBase +\n"
+        "            extensions.findIndex(\n"
+        "              e =>\n"
+        "                getSectionForExtension(e) === this.props.state.selectedSection\n"
+        "            )",
         1,
     ),
     (
@@ -87,9 +131,15 @@ EDITS = [
         "          <span>History</span>\n"
         "        </div>\n"
         "\n"
-        "        <div className=\"with-indicator\" id=\"commits-tab\">\n"
-        "          <span>Commits</span>\n"
-        "        </div>\n"
+        "        {extensions.map(extension => (\n"
+        "          <div\n"
+        "            key={extension.id}\n"
+        "            className=\"with-indicator\"\n"
+        "            id={getTabIdForExtension(extension)}\n"
+        "          >\n"
+        "            <span>{extension.title}</span>\n"
+        "          </div>\n"
+        "        ))}\n"
         "      </TabBar>",
         1,
     ),
@@ -106,10 +156,19 @@ EDITS = [
         "    )\n"
         "  }\n"
         "\n"
-        "  private renderCommitsSidebar(): JSX.Element {\n"
+        "  private renderExtensionSidebar(): JSX.Element {\n"
+        "    const section = this.props.state.selectedSection\n"
+        "    const extension = getExtensionForSection(section)\n"
+        "\n"
+        "    if (extension === undefined) {\n"
+        "      throw new Error(`Unknown repository section: ${section}`)\n"
+        "    }\n"
+        "\n"
+        "    const Sidebar = extension.sidebarComponent\n"
+        "\n"
         "    return (\n"
-        "      <CommitsSidebar\n"
-        "        ref={this.commitsSidebarRef}\n"
+        "      <Sidebar\n"
+        "        ref={this.getExtensionSidebarRef(extension.id)}\n"
         "        repository={this.props.repository}\n"
         "        state={this.props.state}\n"
         "        dispatcher={this.props.dispatcher}\n"
@@ -132,33 +191,25 @@ EDITS = [
     ),
     (
         "app/src/ui/repository.tsx",
-        "    if (selectedSection === RepositorySectionTab.Changes) {\n"
-        "      return this.renderChangesSidebar()\n"
         "    } else if (selectedSection === RepositorySectionTab.History) {\n"
         "      return this.renderCompareSidebar()\n"
         "    } else {",
-        "    if (selectedSection === RepositorySectionTab.Changes) {\n"
-        "      return this.renderChangesSidebar()\n"
         "    } else if (selectedSection === RepositorySectionTab.History) {\n"
         "      return this.renderCompareSidebar()\n"
-        "    } else if (selectedSection === RepositorySectionTab.Commits) {\n"
-        "      return this.renderCommitsSidebar()\n"
+        "    } else if (getExtensionForSection(selectedSection) !== undefined) {\n"
+        "      return this.renderExtensionSidebar()\n"
         "    } else {",
         1,
     ),
     (
         "app/src/ui/repository.tsx",
-        "    if (selectedSection === RepositorySectionTab.Changes) {\n"
-        "      return this.renderContentForChanges()\n"
         "    } else if (selectedSection === RepositorySectionTab.History) {\n"
         "      return this.renderContentForHistory()\n"
         "    } else {",
-        "    if (selectedSection === RepositorySectionTab.Changes) {\n"
-        "      return this.renderContentForChanges()\n"
         "    } else if (selectedSection === RepositorySectionTab.History) {\n"
         "      return this.renderContentForHistory()\n"
-        "    } else if (selectedSection === RepositorySectionTab.Commits) {\n"
-        "      // The Commits tab shares the commit details/diff view with History\n"
+        "    } else if (getExtensionForSection(selectedSection) !== undefined) {\n"
+        "      // Extension sections share the commit details/diff view with History\n"
         "      return this.renderContentForHistory()\n"
         "    } else {",
         1,
@@ -175,9 +226,10 @@ EDITS = [
         "      this.compareSidebarRef.current?.focusHistory()\n"
         "    }\n"
         "\n"
-        "    if (this.focusCommitsNeeded) {\n"
-        "      this.focusCommitsNeeded = false\n"
-        "      this.commitsSidebarRef.current?.focusCommits()\n"
+        "    if (this.focusExtensionId !== null) {\n"
+        "      const id = this.focusExtensionId\n"
+        "      this.focusExtensionId = null\n"
+        "      this.extensionSidebarRefs.get(id)?.current?.focus()\n"
         "    }\n"
         "  }",
         1,
@@ -191,12 +243,19 @@ EDITS = [
         "        : RepositorySectionTab.History",
         "  private changeTab() {\n"
         "    const { selectedSection } = this.props.state\n"
-        "    const section =\n"
-        "      selectedSection === RepositorySectionTab.Changes\n"
-        "        ? RepositorySectionTab.History\n"
-        "        : selectedSection === RepositorySectionTab.History\n"
-        "          ? RepositorySectionTab.Commits\n"
-        "          : RepositorySectionTab.Changes",
+        "    const extensions = getRepositorySectionExtensions()\n"
+        "    let section: RepositorySectionTab\n"
+        "\n"
+        "    if (selectedSection === RepositorySectionTab.Changes) {\n"
+        "      section = RepositorySectionTab.History\n"
+        "    } else if (\n"
+        "      selectedSection === RepositorySectionTab.History &&\n"
+        "      extensions.length > 0\n"
+        "    ) {\n"
+        "      section = getSectionForExtension(extensions[0])\n"
+        "    } else {\n"
+        "      section = RepositorySectionTab.Changes\n"
+        "    }",
         1,
     ),
     (
@@ -208,32 +267,32 @@ EDITS = [
         "    const section =\n"
         "      tab === Tab.History\n"
         "        ? RepositorySectionTab.History\n"
-        "        : tab === Tab.Commits\n"
-        "          ? RepositorySectionTab.Commits\n"
+        "        : tab >= ExtensionTabBase\n"
+        "          ? sectionForExtensionIndex(tab - ExtensionTabBase)\n"
         "          : RepositorySectionTab.Changes",
         1,
     ),
-    # ---- G3: app-store.ts —— section 切换/刷新时处理 Commits（复用 History 刷新）----
+    # ---- F3: app-store.ts —— 按扩展声明的刷新语义处理（通用）----
+    (
+        "app/src/lib/stores/app-store.ts",
+        "import { getConflictResolutionModelDisplay } from '../copilot/conflict-resolution-model'",
+        "import { getConflictResolutionModelDisplay } from '../copilot/conflict-resolution-model'\n"
+        "import { getExtensionForSection } from '../extensions/extension-points'",
+        1,
+    ),
     (
         "app/src/lib/stores/app-store.ts",
         "    if (selectedSection === RepositorySectionTab.History) {\n"
         "      await this.refreshHistorySection(repository)\n"
-        "    } else if (selectedSection === RepositorySectionTab.Changes) {\n"
-        "      await this.refreshChangesSection(repository, {\n"
-        "        includingStatus: true,\n"
-        "        clearPartialState: false,\n"
-        "      })\n"
-        "    }",
+        "    } else if (selectedSection === RepositorySectionTab.Changes) {",
         "    if (selectedSection === RepositorySectionTab.History) {\n"
         "      await this.refreshHistorySection(repository)\n"
-        "    } else if (selectedSection === RepositorySectionTab.Commits) {\n"
+        "    } else if (\n"
+        "      getExtensionForSection(selectedSection)?.refreshOnActivate ===\n"
+        "      'history'\n"
+        "    ) {\n"
         "      await this.refreshHistorySection(repository)\n"
-        "    } else if (selectedSection === RepositorySectionTab.Changes) {\n"
-        "      await this.refreshChangesSection(repository, {\n"
-        "        includingStatus: true,\n"
-        "        clearPartialState: false,\n"
-        "      })\n"
-        "    }",
+        "    } else if (selectedSection === RepositorySectionTab.Changes) {",
         1,
     ),
     (
@@ -243,12 +302,14 @@ EDITS = [
         "    } else if (section === RepositorySectionTab.Changes) {",
         "    if (section === RepositorySectionTab.History) {\n"
         "      refreshSectionPromise = this.refreshHistorySection(repository)\n"
-        "    } else if (section === RepositorySectionTab.Commits) {\n"
+        "    } else if (\n"
+        "      getExtensionForSection(section)?.refreshOnActivate === 'history'\n"
+        "    ) {\n"
         "      refreshSectionPromise = this.refreshHistorySection(repository)\n"
         "    } else if (section === RepositorySectionTab.Changes) {",
         1,
     ),
-    # ---- G4: 样式索引引入 commits-filter ----
+    # ---- F4: 样式索引引入扩展样式 ----
     (
         "app/styles/ui/_history.scss",
         "@import 'history/multiple_commits_selected';",
@@ -256,17 +317,24 @@ EDITS = [
         "@import 'history/commits-filter';",
         1,
     ),
-    # ---- G5: ⌘3 菜单与快捷键 ----
+    # ---- F5: 菜单/快捷键由内置扩展清单驱动（通用）----
     (
         "app/src/models/menu-ids.ts",
         "  | 'show-changes'\n  | 'show-history'",
-        "  | 'show-changes'\n  | 'show-history'\n  | 'show-commits'",
+        "  | 'show-changes'\n  | 'show-history'\n  | `show-extension-${string}`",
         1,
     ),
     (
         "app/src/main-process/menu/menu-event.ts",
         "  | 'show-changes'\n  | 'show-history'",
-        "  | 'show-changes'\n  | 'show-history'\n  | 'show-commits'",
+        "  | 'show-changes'\n  | 'show-history'\n  | `show-extension-${string}`",
+        1,
+    ),
+    (
+        "app/src/main-process/menu/build-default-menu.ts",
+        "import { buildTestMenu } from './build-test-menu'",
+        "import { buildTestMenu } from './build-test-menu'\n"
+        "import { getExtensionMenuItems } from '../../lib/extensions/built-in-manifest'",
         1,
     ),
     (
@@ -283,19 +351,63 @@ EDITS = [
         "        accelerator: 'CmdOrCtrl+2',\n"
         "        click: emit('show-history'),\n"
         "      },\n"
-        "      {\n"
-        "        label: __DARWIN__ ? 'Show Commits' : 'Show Co&mmits',\n"
-        "        id: 'show-commits',\n"
-        "        accelerator: 'CmdOrCtrl+3',\n"
-        "        click: emit('show-commits'),\n"
-        "      },",
+        "      // Menu items contributed by repository section extensions\n"
+        "      // (see lib/extensions).\n"
+        "      ...getExtensionMenuItems().map(item => ({\n"
+        "        label: __DARWIN__\n"
+        "          ? item.label\n"
+        "          : item.label.replace('Show ', 'Show &'),\n"
+        "        id: item.id,\n"
+        "        accelerator: item.accelerator,\n"
+        "        click: emit(item.id as MenuEvent),\n"
+        "      })),",
+        1,
+    ),
+    (
+        "app/src/lib/menu-update.ts",
+        "import { MenuIDs } from '../models/menu-ids'",
+        "import { MenuIDs } from '../models/menu-ids'\n"
+        "import { extensionMenuIds } from './extensions/built-in-manifest'",
+        1,
+    ),
+    (
+        "app/src/lib/menu-update.ts",
+        "  'show-changes',\n  'show-history',",
+        "  'show-changes',\n  'show-history',\n  ...extensionMenuIds,",
+        1,  # allMenuIds
+    ),
+    (
+        "app/src/lib/menu-update.ts",
+        "    'show-changes',\n    'show-history',",
+        "    'show-changes',\n    'show-history',\n    ...extensionMenuIds,",
+        1,  # repositoryScopedIDs
+    ),
+    (
+        "app/src/ui/app.tsx",
+        "import { MenuEvent, isTestMenuEvent } from '../main-process/menu'",
+        "import { MenuEvent, isTestMenuEvent } from '../main-process/menu'\n"
+        "import {\n"
+        "  getRepositorySectionExtensionById,\n"
+        "  getSectionForExtension,\n"
+        "} from '../lib/extensions/extension-points'",
         1,
     ),
     (
         "app/src/ui/app.tsx",
-        "      case 'show-history':\n        return this.showHistory(true)",
-        "      case 'show-history':\n        return this.showHistory(true)\n"
-        "      case 'show-commits':\n        return this.showCommits(true)",
+        "  private onMenuEvent(name: MenuEvent): any {\n"
+        "    // Don't react to menu events when an error dialog is shown.\n"
+        "    if (name !== 'test-app-error' && this.state.errorCount > 1) {\n"
+        "      return\n"
+        "    }",
+        "  private onMenuEvent(name: MenuEvent): any {\n"
+        "    // Don't react to menu events when an error dialog is shown.\n"
+        "    if (name !== 'test-app-error' && this.state.errorCount > 1) {\n"
+        "      return\n"
+        "    }\n"
+        "\n"
+        "    if (name.startsWith('show-extension-')) {\n"
+        "      return this.showExtension(name.slice('show-extension-'.length))\n"
+        "    }",
         1,
     ),
     (
@@ -309,71 +421,80 @@ EDITS = [
         "    }\n"
         "  }\n"
         "\n"
-        "  private async showCommits(shouldFocusCommitList: boolean) {\n"
+        "  private async showExtension(extensionId: string) {\n"
         "    const state = this.state.selectedState\n"
         "    if (state == null || state.type !== SelectionType.Repository) {\n"
         "      return\n"
         "    }\n"
         "\n"
+        "    const extension = getRepositorySectionExtensionById(extensionId)\n"
+        "    if (extension === undefined) {\n"
+        "      return\n"
+        "    }\n"
+        "\n"
         "    await this.props.dispatcher.closeCurrentFoldout()\n"
         "\n"
-        "    await this.props.dispatcher.initializeCompare(state.repository, {\n"
-        "      kind: HistoryTabMode.History,\n"
-        "    })\n"
+        "    if (extension.refreshOnActivate === 'history') {\n"
+        "      await this.props.dispatcher.initializeCompare(state.repository, {\n"
+        "        kind: HistoryTabMode.History,\n"
+        "      })\n"
+        "    }\n"
         "\n"
         "    await this.props.dispatcher.changeRepositorySection(\n"
         "      state.repository,\n"
-        "      RepositorySectionTab.Commits\n"
+        "      getSectionForExtension(extension)\n"
         "    )\n"
         "\n"
-        "    if (shouldFocusCommitList) {\n"
-        "      this.repositoryViewRef.current?.setFocusCommitsNeeded()\n"
-        "    }\n"
+        "    this.repositoryViewRef.current?.setFocusExtensionNeeded(extension.id)\n"
         "  }",
         1,
     ),
-    # ---- G6: 品牌名（与官方版共存；cask 分发使用）----
+    (
+        "app/src/ui/repository.tsx",
+        "import { assertNever } from '../lib/fatal-error'\n",
+        "",
+        1,
+    ),
+    # ---- F2b: assertNever → throw（ExtensionStart 动态化后无法静态穷尽）----
+    (
+        "app/src/ui/repository.tsx",
+        "      return assertNever(selectedSection, 'Unknown repository section')",
+        "      throw new Error(`Unknown repository section: ${selectedSection}`)",
+        2,
+    ),
+    (
+        "app/src/lib/stores/app-store.ts",
+        "      return assertNever(section, `Unknown section: ${section}`)",
+        "      throw new Error(`Unknown section: ${section}`)",
+        1,
+    ),
+    (
+        "app/src/ui/app.tsx",
+        "        return assertNever(name, `Unknown menu event name: ${name}`)",
+        "        throw new Error(`Unknown menu event name: ${name}`)",
+        1,
+    ),
+    # ---- F6: 品牌名（与官方版共存；cask 分发使用）----
     (
         "app/package.json",
         '  "productName": "GitHub Desktop",',
         '  "productName": "GitHub Desktop Dimple",',
         1,
-    ),
-    (
-        "app/src/lib/menu-update.ts",
-        "  'show-changes',\n  'show-history',",
-        "  'show-changes',\n  'show-history',\n  'show-commits',",
-        1,  # allMenuIds（2 空格缩进）
-    ),
-    # ---- G6: 品牌名（与官方版共存；cask 分发使用）----
-    (
-        "app/package.json",
-        '  "productName": "GitHub Desktop",',
-        '  "productName": "GitHub Desktop Dimple",',
-        1,
-    ),
-    (
-        "app/src/lib/menu-update.ts",
-        "    'show-changes',\n    'show-history',",
-        "    'show-changes',\n    'show-history',\n    'show-commits',",
-        1,  # repositoryScopedIDs（4 空格缩进）
     ),
 ]
 
 
 def main() -> int:
-    # --fresh：先把 workspace 回退到纯上游基线（撤销已重放的补丁），再注入全部胶水。
-    # 用于「修改胶水 → 重导补丁」的开发流：assemble 会重放补丁，修改胶水前需先回到基线。
+    # --fresh：先把 workspace 回退到基线（撤销已重放的补丁），再注入全部胶水。
     if "--fresh" in sys.argv:
         import subprocess
-        subprocess.run(["git", "checkout", "--", "."], cwd=WS, check=True)
+        # reset --hard 才能回到 HEAD（基线）；checkout -- . 只恢复到暂存区，
+        # 而 export-patches.sh 会把胶水 add 进暂存区。
+        subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=WS, check=True)
         print("[apply-glue] workspace 已回退到基线")
 
     planned: dict[str, list[tuple[str, str, int]]] = {}
     for rel, old, new, count in EDITS:
-        if (WS / rel).read_text() is None:
-            print(f"[apply-glue] 文件不存在: {rel}")
-            return 1
         planned.setdefault(rel, []).append((old, new, count))
 
     for rel, edits in planned.items():
@@ -388,7 +509,7 @@ def main() -> int:
         (WS / rel).write_text(text)
         print(f"[apply-glue] 已应用 {len(edits)} 处改动 → {rel}")
 
-    print("[apply-glue] 全部胶水改动应用成功")
+    print("[apply-glue] 全部框架接线应用成功")
     return 0
 
 
