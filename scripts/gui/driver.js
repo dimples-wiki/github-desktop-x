@@ -236,6 +236,7 @@ async function screenshot(page, name) {
 
 module.exports = {
   launch,
+  ensureFirstRunDone,
   openCommits,
   openHistory,
   openChanges,
