@@ -40,9 +40,32 @@ for sub in gemoji app/static/common/gitignore app/static/common/choosealicense.c
   rsync -a "$UP/$sub/" "$WS/$sub/"
 done
 
-# 3) 应用胶水补丁（顺序由 patches/series.txt 决定）
+
+# 5) 叠加功能模块（全部为新增文件；路径已被 info/exclude 排除）
+shopt -s nullglob
+for mod in "$ROOT"/feature/*/; do
+  echo "[assemble] overlay feature module: $(basename "$mod")"
+  rsync -a "$mod" "$WS/"
+done
+
+# 3) 创建基线 git 仓库（纯上游内容）：
+#    - 上游 script/build.ts 依赖 .git 注入版本等元数据；
+#    - git apply 需在本仓库内执行，否则会向上误发现父仓库导致补丁被静默跳过；
+#    - export-patches.sh 以 baseline 提交为基准生成胶水补丁。
+#    功能模块文件通过 .git/info/exclude 排除，保证 diff 只含胶水改动。
+cd "$WS"
+git init -q
+cat > .git/info/exclude <<'EOF'
+# feature module overlay (owned by the parent repo, not part of glue patches)
+/app/src/ui/history/commits-*
+/app/styles/ui/history/_commits-*
+/app/test/unit/commits-*
+EOF
+git add -A
+git -c user.name=assemble -c user.email=assemble@local commit -qm "baseline: upstream $(git -C "$UP" describe --tags 2>/dev/null || echo HEAD)" >/dev/null
+
+# 4) 应用胶水补丁（顺序由 patches/series.txt 决定；此时 workspace 已是独立 git 仓库）
 if [ -f "$ROOT/patches/series.txt" ]; then
-  cd "$WS"
   while IFS= read -r p; do
     [ -z "$p" ] && continue
     echo "[assemble] applying patch: $p"
@@ -50,30 +73,6 @@ if [ -f "$ROOT/patches/series.txt" ]; then
   done < "$ROOT/patches/series.txt"
 else
   echo "[assemble] no patches/series.txt — 基线组装（无胶水）"
-fi
-
-# 4) 叠加功能模块（全部为新增文件，路径与上游仓库一致）
-shopt -s nullglob
-for mod in "$ROOT"/feature/*/; do
-  echo "[assemble] overlay feature module: $(basename "$mod")"
-  rsync -a "$mod" "$WS/"
-done
-
-# 5) 创建基线 git 仓库：
-#    - 上游 script/build.ts 依赖 .git 注入版本等元数据；
-#    - export-patches.sh 以 baseline 提交为基准生成胶水补丁。
-#    功能模块文件通过 .git/info/exclude 排除，保证 diff 只含胶水改动。
-cd "$WS"
-if [ ! -d .git ]; then
-  git init -q
-  cat > .git/info/exclude <<'EOF'
-# feature module overlay (owned by the parent repo, not part of glue patches)
-/app/src/ui/history/commits-*
-/app/styles/ui/history/_commits-*
-/app/test/unit/commits-*
-EOF
-  git add -A
-  git -c user.name=assemble -c user.email=assemble@local commit -qm "baseline: upstream $(git -C "$UP" describe --tags 2>/dev/null || echo HEAD) + patches + feature overlay (excluded)"
 fi
 
 echo "[assemble] done → $WS"

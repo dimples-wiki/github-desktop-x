@@ -35,8 +35,10 @@ const FAKE_HOME = path.join(RUNTIME, 'fake-home')
 const SCREENSHOTS = path.join(ROOT, 'screenshots')
 const DEFAULT_REPO = path.join(ROOT, 'scripts', 'fixtures', 'demo-repo')
 
-/** 启动应用（默认打开 demo-repo），完成首启流程后返回 { app, page } */
-async function launch({ repo = DEFAULT_REPO, fresh = false } = {}) {
+/** 启动应用（默认打开 demo-repo），完成首启流程后返回 { app, page }。
+ *  每次默认清空 user-data（与上游 e2e 一致——残留的扩展状态会导致渲染进程 sandbox 崩溃），
+ *  首启的 welcome 流程由 ensureFirstRunDone 自动完成。 */
+async function launch({ repo = DEFAULT_REPO, fresh = true } = {}) {
   if (fresh) {
     fs.rmSync(USER_DATA, { recursive: true, force: true })
   }
@@ -70,14 +72,34 @@ async function launch({ repo = DEFAULT_REPO, fresh = false } = {}) {
     null,
     { timeout: 60000 }
   )
+
+  // "Move to Applications" 弹窗出现时机不定，注册为自动清除处理器
+  await page
+    .addLocatorHandler(
+      page.locator('#move-to-applications-folder'),
+      async () => {
+        await page
+          .locator('#move-to-applications-folder button:has-text("Not Now")')
+          .click({ timeout: 5000 })
+          .catch(() => {})
+      }
+    )
+    .catch(() => {})
+
   await ensureFirstRunDone(page)
   return { app, page }
 }
 
 /** 首次启动：跳过 welcome 流程、处理 macOS "移动到应用程序" 弹窗 */
 async function ensureFirstRunDone(page) {
+  // welcome 流程是异步渲染的，给足出现时间
   const skipButton = page.locator('a.skip-button')
-  if (await skipButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+  const welcomeVisible = await skipButton
+    .waitFor({ state: 'visible', timeout: 20000 })
+    .then(() => true)
+    .catch(() => false)
+
+  if (welcomeVisible) {
     await skipButton.click()
 
     const nameInput = page.locator('input[placeholder="Your Name"]')
@@ -98,6 +120,18 @@ async function ensureFirstRunDone(page) {
   }
 
   await dismissMoveToApplicationsDialog(page)
+
+  // --cli-open 打开未添加过的仓库时会弹出 "Add Local Repository" 确认框
+  const addRepoButton = page.locator(
+    '.modal .dialog-content button:has-text("Add Repository"), button:has-text("Add Repository")'
+  )
+  if (await addRepoButton.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+    await addRepoButton.first().click()
+    await page
+      .locator(addRepoButton.first())
+      .waitFor({ state: 'hidden', timeout: 15000 })
+      .catch(() => {})
+  }
 }
 
 async function dismissMoveToApplicationsDialog(page) {
@@ -185,6 +219,7 @@ async function getAuthorOptions(page) {
 async function getSelectedTabId(page) {
   return page.evaluate(
     () =>
+      document.querySelector('.tab-bar-item.selected [id]')?.id ??
       document.querySelector('.tab-bar-item.selected')?.getAttribute('id') ??
       null
   )

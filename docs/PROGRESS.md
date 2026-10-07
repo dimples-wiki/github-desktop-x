@@ -12,7 +12,7 @@
 | D3 过滤纯逻辑 + 单测 | ✅ | commits-filter-logic.ts + 18 个单测全绿（yarn test:unit app/test/unit/commits-filter-logic-test.ts） |
 | D4 UI 模块 + 胶水补丁 | ✅ | commits-sidebar.tsx + 5 个胶水补丁（净改动 87 行，全部为注册性加法） |
 | D5 测试夹具 + GUI 驱动工具 | ✅ | scripts/make-fixture-repo.sh（34 提交/4 作者/含正文与分支）；scripts/gui/driver.js（playwright _electron） |
-| D6 实机验证 + 截图 | ⏳ | 构建进行中 |
+| D6 实机验证 + 截图 | ✅ | prod 构建产物 + playwright 驱动；12 张证据截图；筛选计数全部与夹具预期一致（34 总数 / Yoko 9 / 日期 12 / 组合 3 / 空态 0） |
 | D7 盲测验收 + 升级演练 + 总结 | ⬜ | |
 
 ## 勘探记录（D1 结论，来自勘探 agent，实施时已核对）
@@ -42,4 +42,4 @@
 - 2026-10-07 D3：commits-filter-logic.ts + 单测 18 个全绿（期间修复：筛选邮箱需双侧小写化）。
 - 2026-10-07 D4：commits-sidebar.tsx（筛选栏 + 复用 CommitList）+ apply-glue.py（锚点校验式胶水注入）+ export-patches.sh → 5 补丁 87 行净改动；从零重放验证通过。
 - 2026-10-07 D5：demo-repo 夹具（34 提交/4 作者/6-10 月/含多行正文/experiment 分支）；driver.js（playwright 驱动，welcome 流处理、筛选操作、截图 API）。
-- 2026-10-07 D6：构建中（DESKTOP_SKIP_PACKAGE=1 → out/main.js）。
+- 2026-10-08 D6：关键踩坑与解决：①dev 构建的 index.html 引用 localhost:3000（dev server），须用与上游 e2e 相同的 prod 构建（DESKTOP_SKIP_PACKAGE=1 DESKTOP_E2E_UPDATES_URL=… build:prod）；②playwright 复用 user-data 时残留扩展状态会让渲染进程 sandbox 崩溃，driver 每次清空 user-data；③--cli-open 对未添加仓库会弹出 Add Local Repository 确认框，driver 自动点击；④"移动到应用程序"弹窗用 addLocatorHandler 自动清除。12 张证据截图落盘 screenshots/，筛选计数与 git log 预期全部吻合。
