@@ -329,7 +329,13 @@ export class CommitsSidebar extends React.Component<
             onClick={this.onToggleExpanded}
           >
             <Octicon
-              symbol={expanded ? octicons.chevronUp : octicons.chevronDown}
+              symbol={
+                expanded
+                  ? octicons.chevronUp
+                  : hiddenFiltersActive
+                  ? octicons.filter
+                  : octicons.chevronDown
+              }
             />
           </Button>
 

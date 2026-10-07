@@ -94,3 +94,34 @@
 | bf-*.png（15 张） | 功能盲测 agent 独立采集 |
 
 所有截图均为实机运行（Electron + playwright 驱动，构建产物 workspace/out）真实渲染，非 mock。
+
+
+---
+
+# 第四轮验收：插件框架重构 + 折叠筛选栏（2026-10-08）
+
+架构从「业务专属胶水」升级为「插件框架先行」（framework/ + 自注册插件）后全量复验：
+
+## R 功能盲测复验（独立 agent，10/10 全过）
+
+- R1 tab 回归：`extension-tab-commits-filter` 动态生成于 History 右侧，切换正常
+- R2 数据回归：34 条集合与顺序 = git log main
+- R3/R4 折叠：默认态 description/author/dates 完全不在 DOM；展开全部出现（author 5 项）；收起从 DOM 消失
+- R5 收起生效：author=Yoko → 收起 → 仍 9 of 34，按钮 selected 高亮
+- R6 高级筛选 12/12：4 作者计数 8/9/8/9；message 大小写/多词 AND/词序无关；描述仅正文匹配；日期闭区间/单边边界日全对（真值逐条比对）
+- R7 组合 + Clear 还原
+- R8 View 菜单出现 "Show Commits" ⌘3，菜单触发切换成功
+- R9 详情/富空态回归
+- R10 Changes/History 回归
+
+## D UI 盲审复验（独立 agent，pass）
+
+- D1 折叠默认态与原生 filter-box-container 形态同构，信息密度优于平铺
+- D2 展开衔接自然、详情面板逐像素未动
+- D3 隐藏筛选高亮符合原生 selected 语言（+ 三重冗余：高亮/计数/清除按钮）
+- D4 计数与 Clear Filters 两态位置稳定
+- D5 建议已采纳：隐藏筛选生效时 toggle 图标改用**漏斗**（区分"可展开"与"有隐藏筛选"），已重采 16 号截图
+
+## 框架层新增单测
+
+- `extensions-registry-test.ts`（5 用例）：manifest 校验/注册顺序/重复注册拒绝/section 双向映射/内建 section 不映射 —— 共 23 单测全绿

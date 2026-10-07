@@ -53,3 +53,4 @@
 
 - 2026-10-08 架构升级（应用户要求）：从「业务专属胶水」改为「**插件框架先行**」——新增 `framework/` 层（`extension-points.ts` 注册 API + `built-in-manifest.ts` 纯数据清单，主进程/渲染进程共用）；Commits 功能降级为通过 `registerRepositorySection()` 自注册的内置插件；`patches/` 全部变为通用框架接线（动态 tab/路由/聚焦/菜单驱动），**业务逻辑 0 行进入上游侧**。新增插件只需：manifest 一行 + built-in/ 模块 + `register()` 调用。补丁重组为 0001-0006（core/repository-view/app-store/styles/menu-shortcut/branding），净改动 187 行，含 5 个新增框架单测（共 23 绿）。踩坑：①枚举动态化后三处 assertNever 穷尽检查失效 → 改显式 throw；②`git checkout -- .` 只恢复暂存区，--fresh 需用 `git reset --hard`；③`register()` 定义而未调用被 webpack 摇树移除 → index 必须显式调用。
 - 2026-10-08 UI 优化：筛选栏改为「默认只显示 message 搜索框」，description/author/dates 折叠进展开/收起按钮（chevron，aria-expanded + tooltip，镜像 changes 列表 filter-box-container 形态）；收起时隐藏筛选仍生效，按钮以 selected 高亮提示；新增截图 15-expanded-filters / 16-collapsed-hidden-active。
+- 2026-10-08 第四轮盲测：功能 R1-R10 全过（含折叠语义与 ⌘3 菜单）、UI D1-D5 pass；采纳评审建议——隐藏筛选生效时 toggle 图标改用漏斗（16 号截图重采）。
