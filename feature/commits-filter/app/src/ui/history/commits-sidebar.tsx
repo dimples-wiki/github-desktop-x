@@ -14,6 +14,8 @@ import { PopupType } from '../../models/popup'
 import { Emoji } from '../../lib/emoji'
 import { ThrottledScheduler } from '../lib/throttled-scheduler'
 import { formatNumber } from '../../lib/format-number'
+import { Octicon } from '../octicons'
+import * as octicons from '../octicons/octicons.generated'
 import { getUniqueCoauthorsAsAuthors } from '../../lib/unique-coauthors-as-authors'
 import { getSquashedCommitDescription } from '../../lib/squash/squashed-commit-description'
 import { doMergeCommitsExistAfterCommit } from '../../lib/git'
@@ -309,11 +311,16 @@ export class CommitsSidebar extends React.Component<
           />
         </div>
 
-        {dateFromInvalid || dateToInvalid ? (
-          <div className="commits-filter-date-hint" role="alert">
-            {__DARWIN__ ? 'Invalid Date' : 'Invalid date'} — YYYY-MM-DD
-          </div>
-        ) : null}
+        {/* Always rendered (reserved height) so that fixing the date does
+            not make the list jump. */}
+        <div
+          className={classNames('commits-filter-date-hint', {
+            visible: dateFromInvalid || dateToInvalid,
+          })}
+          role="alert"
+        >
+          {__DARWIN__ ? 'Invalid Date' : 'Invalid date'} — YYYY-MM-DD
+        </div>
 
         <div className="commits-filter-row commits-filter-summary">
           <span className="commits-filter-count" aria-live="polite">
@@ -362,8 +369,25 @@ export class CommitsSidebar extends React.Component<
     const matchingSHAs = matchingCommits.map(c => c.sha)
     const authors = getCommitAuthors(commits)
 
+    // Follows the native blankslate pattern (icon + title + description +
+    // action) used by e.g. the Changes interstitial.
     const emptyListMessage = filtersActive
-      ? 'No commits match your filters'
+      ? ((
+          <div className="commits-filter-empty">
+            <Octicon
+              className="commits-filter-empty-icon"
+              symbol={octicons.search}
+            />
+            <h2>No commits match your filters</h2>
+            <p>Try adjusting or clearing your filters.</p>
+            <Button
+              className="commits-filter-empty-action"
+              onClick={this.onClearFilters}
+            >
+              {__DARWIN__ ? 'Clear Filters' : 'Clear filters'}
+            </Button>
+          </div>
+        ) as JSX.Element)
       : 'No history'
 
     return (

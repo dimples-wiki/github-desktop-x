@@ -9,7 +9,7 @@
 |------|------|------|------|
 | A 功能完整可用（盲测 agent，A1–A10，70 检查项） | ✅ 全部通过 | — | — |
 | B 高内聚低耦合可拓展（架构评审 agent，B1–B5） | ✅ 全部通过 | 评审建议已全部落实（见下） | ✅ |
-| C UI 一致性（视觉评审 agent，C1–C5） | ❌ C2/C3/C4 不通过 | 3 项修复 + 2 项误报澄清 | ⏳ |
+| C UI 一致性（视觉评审 agent，C1–C5） | ❌ C2/C3/C4 不通过 | 3 项修复 + 2 项误报澄清 | ✅ Round-2 过 3/4，Round-3 全过（像素级） |
 
 ## A 功能盲测（首轮即全过）
 
@@ -59,9 +59,20 @@
 | 详情描述「等宽字体 + 浅色条带」像第三方混入 | **原生即如此**：`styles/ui/history/_commit-summary.scss:150` `.commit-summary-description { font-family: var(--font-family-monospace); }`。评审基线 01 未含详情头部，故误判。Commits 详情直接复用 History 的 `renderContentForHistory()`，两者像素级相同 |
 | 筛选输入边框 rgb(113,123,133) 亮于 Compare 搜索框 rgb(20,20,20) | 评审参照物是 **FancyTextBox**（特例，--base-border）；所有标准文本框走 `@include textboxish` → `--contrast-border`（mixins/_textboxish.scss:10，暗色主题下即评审测得的浅灰）。我们的控件与全局标准文本框（提交框、clone URL 等）一致，保持不改 |
 
-### 复审
+### 复审（Round-2 / Round-3，同一评审员，像素级取证）
 
-修复后重采 12 张截图（screenshots/01..12），已提交同一评审员复审，结论见文末附录。
+**Round-2**：C1/C2/C4 通过（双重 × 消失、非法日期 danger 红 rgb(215,58,73)+提示行、头像一致性确认为截图时序问题并消除、澄清 A/B 均被接受并撤销「第三方混入感」指控）；唯一保留 C3——空态仅为单行小灰字，不符原生 blankslate 层级。
+
+**Round-2 追加修复（评审 C5 建议全部落实）**：
+- 空态重构为原生 blankslate 层级：搜索图标 + 标题 + 副标题 + Clear Filters 行动入口
+- 非法日期聚焦光晕改红色系（消除蓝红混杂）
+- 提示行常驻占位（修正日期时列表零跳动）
+
+**Round-3 最终结论：overall = pass**
+- 09 红色光晕零蓝色分量；08/09/11 文本带逐行一致（零布局位移）
+- **13-history-detail-with-description.png 与 07 的详情头部区域 0 像素差异**——Commits 复用 History 详情渲染由推断升级为截图级实证
+- 11 空态度量：图标→标题→副标题→按钮，垂直节奏 12-14px、整块居中，完全符合原生 blankslate 模式
+- 剩余 3 条观察均为非阻塞低优先级项（陈旧选中项保留查看、常驻占位约 24px 高度代价、标准 textbox 边框与 FancyTextBox 特例的差异），已记录于 PROGRESS 关键决策
 
 ## 真实证据清单（screenshots/）
 
@@ -79,6 +90,7 @@
 | 10-filter-combined.png | Alex Chen + 2026-10 起（3 of 34） |
 | 11-no-matches-empty-state.png | 空态（0 of 34） |
 | 12-commit-detail.png | 默认态点开详情 |
+| 13-history-detail-with-description.png | 对照证据：History 含正文详情（与 07 的 Commits 详情头部 0 像素差异） |
 | bf-*.png（15 张） | 功能盲测 agent 独立采集 |
 
 所有截图均为实机运行（Electron + playwright 驱动，构建产物 workspace/out）真实渲染，非 mock。

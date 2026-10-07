@@ -13,7 +13,7 @@
 | D4 UI 模块 + 胶水补丁 | ✅ | commits-sidebar.tsx + 5 个胶水补丁（净改动 87 行，全部为注册性加法） |
 | D5 测试夹具 + GUI 驱动工具 | ✅ | scripts/make-fixture-repo.sh（34 提交/4 作者/含正文与分支）；scripts/gui/driver.js（playwright _electron） |
 | D6 实机验证 + 截图 | ✅ | prod 构建产物 + playwright 驱动；12 张证据截图；筛选计数全部与夹具预期一致（34 总数 / Yoko 9 / 日期 12 / 组合 3 / 空态 0） |
-| D7 盲测验收 + 升级演练 + 总结 | ⏳ | A 全过(70/70)、B 全过(建议已落实)、C 修复后复审中；升级演练已成功（3.6.7-beta2 零冲突重放） |
+| D7 盲测验收 + 升级演练 + 总结 | ✅ | A 70/70 全过；B 全过（5 条建议全落实）；C 三轮后全过（像素级）；升级演练成功 |
 
 ## 勘探记录（D1 结论，来自勘探 agent，实施时已核对）
 
@@ -49,3 +49,4 @@
 
 - 2026-10-08 D7：三维盲测首轮：A 功能 70/70 全过（独立 agent 只用 driver+git log 真值）；B 架构 pass（胶水 9 文件 +93/−3，assemble 幂等实测，5 补丁 reverse-apply 全过，建议 5 条全部落实：onSquash 接线、文档勘误、统计口径修正）；C UI 首轮 3 项 fail → 修复（双重 ×、非法日期红框+提示、截图等待策略）+ 2 项误报澄清（等宽描述字体与 textboxish 边框均为上游原生样式，附 file:line 证据），已送同一评审员复审。
 - 2026-10-08 D7：**submodule 升级演练成功**——upstream 切到 release-3.6.7-beta2 后 `./scripts/assemble.sh` 5 补丁零冲突重放（9 个胶水文件、commits-tab 生效）；随后回滚 release-3.6.6 并重建，父仓库指针无漂移。
+- 2026-10-08 D7 完成：UI 盲审 Round-2（C1/C2/C4 过，剩空态一项）→ 空态重构为原生 blankslate 层级 + 红色聚焦光晕 + 提示行常驻占位 → Round-3 **overall = pass**（13 与 07 详情头部 0 像素差异实证详情渲染同构）。三维验收全部达成，最终交付。

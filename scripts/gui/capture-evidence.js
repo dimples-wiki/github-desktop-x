@@ -100,6 +100,16 @@ async function waitListLoaded(page) {
   await page.waitForTimeout(1500)
   await driver.screenshot(page, '12-commit-detail')
 
+  // 13 对照证据：History 中选中含描述(正文)的提交，详情头与 Commits 完全同构
+  await driver.openHistory(page)
+  await waitListLoaded(page)
+  const target = page
+    .locator('#commit-list .commit', { hasText: 'Release v1.0.0' })
+    .first()
+  await target.click()
+  await page.waitForTimeout(1500)
+  await driver.screenshot(page, '13-history-detail-with-description')
+
   await app.close()
   console.log('[capture] done')
 })().catch(e => {

@@ -46,9 +46,15 @@
       min-width: 0;
 
       // mirrors the native `:invalid` presentation of textboxish inputs
-      // (see mixins/_textboxish.scss focus styles) for our custom date check
+      // (see mixins/_textboxish.scss focus styles) for our custom date check,
+      // including a red-tinted focus ring so the two signals don't mix
       &.invalid-date input {
         border-color: var(--error-color);
+
+        &:focus {
+          border-color: var(--error-color);
+          box-shadow: 0 0 0 1px rgba($red, 0.25);
+        }
       }
     }
 
@@ -58,10 +64,18 @@
     }
   }
 
+  // Always occupies its (reserved) height; only becomes visible when a date
+  // input is invalid, so that correcting the date doesn't shift the layout.
   .commits-filter-date-hint {
     color: var(--error-color);
     font-size: var(--font-size-sm);
     margin-top: calc(var(--spacing-half) * -1);
+    visibility: hidden;
+    min-height: 18px;
+
+    &.visible {
+      visibility: visible;
+    }
   }
 
   .commits-filter-summary {
@@ -84,4 +98,40 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+
+  // Rich empty state (filters active but nothing matches), following the
+  // native blankslate pattern (icon + title + description + action).
+  .commits-filter-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-half);
+    padding: var(--spacing);
+    max-width: 260px;
+
+    .commits-filter-empty-icon.octicon {
+      width: 32px;
+      height: 32px;
+      fill: var(--text-secondary-color);
+      opacity: 0.6;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-color);
+    }
+
+    p {
+      margin: 0;
+      color: var(--text-secondary-color);
+      font-size: var(--font-size-sm);
+    }
+
+    .commits-filter-empty-action {
+      margin-top: var(--spacing-half);
+    }
+  }
 }
