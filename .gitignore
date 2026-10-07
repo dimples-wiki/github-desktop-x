@@ -2,3 +2,6 @@ workspace/
 node_modules/
 *.log
 .DS_Store
+.runtime/
+screenshots/
+scripts/fixtures/

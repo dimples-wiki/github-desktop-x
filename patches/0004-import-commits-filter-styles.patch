@@ -1,0 +1,9 @@
+diff --git a/app/styles/ui/_history.scss b/app/styles/ui/_history.scss
+index 749adce..1395145 100644
+--- a/app/styles/ui/_history.scss
++++ b/app/styles/ui/_history.scss
+@@ -4,3 +4,4 @@
+ @import 'history/expandable-commit-summary';
+ @import 'history/file-list';
+ @import 'history/multiple_commits_selected';
++@import 'history/commits-filter';
