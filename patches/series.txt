@@ -3,3 +3,4 @@
 0003-handle-commits-section-in-app-store.patch
 0004-import-commits-filter-styles.patch
 0005-add-show-commits-menu-and-shortcut.patch
+0006-rebrand-app-for-coexistence.patch

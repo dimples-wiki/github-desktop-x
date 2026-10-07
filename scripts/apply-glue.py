@@ -332,11 +332,25 @@ EDITS = [
         "  }",
         1,
     ),
+    # ---- G6: 品牌名（与官方版共存；cask 分发使用）----
+    (
+        "app/package.json",
+        '  "productName": "GitHub Desktop",',
+        '  "productName": "GitHub Desktop Dimple",',
+        1,
+    ),
     (
         "app/src/lib/menu-update.ts",
         "  'show-changes',\n  'show-history',",
         "  'show-changes',\n  'show-history',\n  'show-commits',",
         1,  # allMenuIds（2 空格缩进）
+    ),
+    # ---- G6: 品牌名（与官方版共存；cask 分发使用）----
+    (
+        "app/package.json",
+        '  "productName": "GitHub Desktop",',
+        '  "productName": "GitHub Desktop Dimple",',
+        1,
     ),
     (
         "app/src/lib/menu-update.ts",
@@ -348,6 +362,13 @@ EDITS = [
 
 
 def main() -> int:
+    # --fresh：先把 workspace 回退到纯上游基线（撤销已重放的补丁），再注入全部胶水。
+    # 用于「修改胶水 → 重导补丁」的开发流：assemble 会重放补丁，修改胶水前需先回到基线。
+    if "--fresh" in sys.argv:
+        import subprocess
+        subprocess.run(["git", "checkout", "--", "."], cwd=WS, check=True)
+        print("[apply-glue] workspace 已回退到基线")
+
     planned: dict[str, list[tuple[str, str, int]]] = {}
     for rel, old, new, count in EDITS:
         if (WS / rel).read_text() is None:

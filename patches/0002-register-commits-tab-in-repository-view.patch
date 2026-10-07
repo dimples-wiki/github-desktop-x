@@ -1,5 +1,5 @@
 diff --git a/app/src/ui/repository.tsx b/app/src/ui/repository.tsx
-index d716e31..2faa799 100644
+index d716e31..a514998 100644
 --- a/app/src/ui/repository.tsx
 +++ b/app/src/ui/repository.tsx
 @@ -8,6 +8,7 @@ import { NoChanges } from './changes/no-changes'
@@ -41,15 +41,17 @@ index d716e31..2faa799 100644
    public scrollCompareListToTop(): void {
      this.forceCompareListScrollTop = true
  
-@@ -218,6 +226,8 @@ export class RepositoryView extends React.Component<
+@@ -218,7 +226,9 @@ export class RepositoryView extends React.Component<
      const selectedTab =
        this.props.state.selectedSection === RepositorySectionTab.Changes
          ? Tab.Changes
+-        : Tab.History
 +        : this.props.state.selectedSection === RepositorySectionTab.Commits
-+        ? Tab.Commits
-         : Tab.History
++          ? Tab.Commits
++          : Tab.History
  
      return (
+       <TabBar selectedIndex={selectedTab} onTabClicked={this.onTabClicked}>
 @@ -230,6 +240,10 @@ export class RepositoryView extends React.Component<
          <div className="with-indicator" id="history-tab">
            <span>History</span>
@@ -132,17 +134,19 @@ index d716e31..2faa799 100644
 +      selectedSection === RepositorySectionTab.Changes
 +        ? RepositorySectionTab.History
 +        : selectedSection === RepositorySectionTab.History
-+        ? RepositorySectionTab.Commits
-+        : RepositorySectionTab.Changes
++          ? RepositorySectionTab.Commits
++          : RepositorySectionTab.Changes
  
      this.props.dispatcher.changeRepositorySection(
        this.props.repository,
-@@ -718,6 +766,8 @@ export class RepositoryView extends React.Component<
+@@ -718,7 +766,9 @@ export class RepositoryView extends React.Component<
      const section =
        tab === Tab.History
          ? RepositorySectionTab.History
+-        : RepositorySectionTab.Changes
 +        : tab === Tab.Commits
-+        ? RepositorySectionTab.Commits
-         : RepositorySectionTab.Changes
++          ? RepositorySectionTab.Commits
++          : RepositorySectionTab.Changes
  
      this.props.dispatcher.changeRepositorySection(
+       this.props.repository,

@@ -24,6 +24,8 @@ group_files() {
       echo "app/styles/ui/_history.scss" ;;
     0005-add-show-commits-menu-and-shortcut)
       echo "app/src/models/menu-ids.ts app/src/main-process/menu/menu-event.ts app/src/main-process/menu/build-default-menu.ts app/src/ui/app.tsx app/src/lib/menu-update.ts" ;;
+    0006-rebrand-app-for-coexistence)
+      echo "app/package.json" ;;
     *) return 1 ;;
   esac
 }
@@ -44,7 +46,8 @@ for name in 0001-add-commits-to-repository-section-tab \
             0002-register-commits-tab-in-repository-view \
             0003-handle-commits-section-in-app-store \
             0004-import-commits-filter-styles \
-            0005-add-show-commits-menu-and-shortcut; do
+            0005-add-show-commits-menu-and-shortcut \
+            0006-rebrand-app-for-coexistence; do
   files="$(group_files "$name")"
   if git diff --cached --quiet -- $files; then
     echo "[export-patches] 跳过 $name（该组无改动）"
