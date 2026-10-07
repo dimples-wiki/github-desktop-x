@@ -13,7 +13,7 @@
 | D4 UI 模块 + 胶水补丁 | ✅ | commits-sidebar.tsx + 5 个胶水补丁（净改动 87 行，全部为注册性加法） |
 | D5 测试夹具 + GUI 驱动工具 | ✅ | scripts/make-fixture-repo.sh（34 提交/4 作者/含正文与分支）；scripts/gui/driver.js（playwright _electron） |
 | D6 实机验证 + 截图 | ✅ | prod 构建产物 + playwright 驱动；12 张证据截图；筛选计数全部与夹具预期一致（34 总数 / Yoko 9 / 日期 12 / 组合 3 / 空态 0） |
-| D7 盲测验收 + 升级演练 + 总结 | ⬜ | |
+| D7 盲测验收 + 升级演练 + 总结 | ⏳ | A 全过(70/70)、B 全过(建议已落实)、C 修复后复审中；升级演练已成功（3.6.7-beta2 零冲突重放） |
 
 ## 勘探记录（D1 结论，来自勘探 agent，实施时已核对）
 
@@ -46,3 +46,6 @@
 - 2026-10-07 D4：commits-sidebar.tsx（筛选栏 + 复用 CommitList）+ apply-glue.py（锚点校验式胶水注入）+ export-patches.sh → 5 补丁 87 行净改动；从零重放验证通过。
 - 2026-10-07 D5：demo-repo 夹具（34 提交/4 作者/6-10 月/含多行正文/experiment 分支）；driver.js（playwright 驱动，welcome 流处理、筛选操作、截图 API）。
 - 2026-10-08 D6：关键踩坑与解决：①dev 构建的 index.html 引用 localhost:3000（dev server），须用与上游 e2e 相同的 prod 构建（DESKTOP_SKIP_PACKAGE=1 DESKTOP_E2E_UPDATES_URL=… build:prod）；②playwright 复用 user-data 时残留扩展状态会让渲染进程 sandbox 崩溃，driver 每次清空 user-data；③--cli-open 对未添加仓库会弹出 Add Local Repository 确认框，driver 自动点击；④"移动到应用程序"弹窗用 addLocatorHandler 自动清除。12 张证据截图落盘 screenshots/，筛选计数与 git log 预期全部吻合。
+
+- 2026-10-08 D7：三维盲测首轮：A 功能 70/70 全过（独立 agent 只用 driver+git log 真值）；B 架构 pass（胶水 9 文件 +93/−3，assemble 幂等实测，5 补丁 reverse-apply 全过，建议 5 条全部落实：onSquash 接线、文档勘误、统计口径修正）；C UI 首轮 3 项 fail → 修复（双重 ×、非法日期红框+提示、截图等待策略）+ 2 项误报澄清（等宽描述字体与 textboxish 边框均为上游原生样式，附 file:line 证据），已送同一评审员复审。
+- 2026-10-08 D7：**submodule 升级演练成功**——upstream 切到 release-3.6.7-beta2 后 `./scripts/assemble.sh` 5 补丁零冲突重放（9 个胶水文件、commits-tab 生效）；随后回滚 release-3.6.6 并重建，父仓库指针无漂移。
