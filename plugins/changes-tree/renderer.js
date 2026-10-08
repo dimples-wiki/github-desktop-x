@@ -463,7 +463,7 @@
       flattenTree(tree, this.state.collapsedFolders, 0, rows);
       const counts = countStatuses(files);
       const activeCount = Object.values(statusFilters).filter(Boolean).length;
-      return /* @__PURE__ */ React.createElement("div", { className: "file-list" }, /* @__PURE__ */ React.createElement("div", { className: "list-focus-container" }, /* @__PURE__ */ React.createElement("div", { className: "changes-tree" }, styleInjection(), /* @__PURE__ */ React.createElement("div", { className: "changes-tree-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "filter-box-container" }, /* @__PURE__ */ React.createElement(
+      return /* @__PURE__ */ React.createElement("div", { className: "file-list" }, /* @__PURE__ */ React.createElement("div", { className: "list-focus-container" }, /* @__PURE__ */ React.createElement("div", { className: "changes-tree" }, styleInjection(), /* @__PURE__ */ React.createElement("div", { className: "changes-tree-header-row", style: { display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("div", { className: "filter-box-container" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           className: `button-component filter-button${activeCount > 0 ? " active" : ""}`,
@@ -483,7 +483,7 @@
           className: "filter-list-filter-field",
           onValueChanged: this.onFilterTextChanged
         }
-      ), this.props.viewSwitch), this.state.isFilterOptionsOpen ? this.renderFilterPopover(files) : null, /* @__PURE__ */ React.createElement("div", { className: "checkbox-container" }, /* @__PURE__ */ React.createElement(
+      ), this.props.viewSwitch), this.state.isFilterOptionsOpen ? this.renderFilterPopover(files) : null), /* @__PURE__ */ React.createElement("div", { className: "checkbox-container", style: { display: "flex", alignItems: "center", padding: "var(--spacing-half) var(--spacing-half) 0" } }, /* @__PURE__ */ React.createElement(
         Checkbox,
         {
           value: includeAllValue,
@@ -492,7 +492,7 @@
           className: "changes-tree-check-all",
           label: `${files.length} changed file${files.length === 1 ? "" : "s"}`
         }
-      ))), rows.map((row) => {
+      )), rows.map((row) => {
         const isFolder = row.file === void 0;
         const include = !isFolder && row.file.selection.getSelectionType() === DiffSelectionType.All;
         return /* @__PURE__ */ React.createElement(

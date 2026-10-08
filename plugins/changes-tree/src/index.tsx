@@ -582,7 +582,7 @@ export class ChangesTreeView extends React.Component<any, any> {
       <div className="changes-tree">
         {styleInjection()}
 
-        <div className="changes-tree-header-row">
+        <div className="changes-tree-header-row" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="filter-box-container">
             <button
               className={`button-component filter-button${
@@ -620,17 +620,18 @@ export class ChangesTreeView extends React.Component<any, any> {
             ? this.renderFilterPopover(files)
             : null}
 
-          <div className="checkbox-container">
-            <Checkbox
-              value={includeAllValue}
-              onChange={(event: any) =>
-                onIncludeAllChanged(event.currentTarget.checked)
-              }
-              ariaLabel="Include all changed files"
-              className="changes-tree-check-all"
-              label={`${files.length} changed file${files.length === 1 ? '' : 's'}`}
-            />
-          </div>
+        </div>
+
+        <div className="checkbox-container" style={{ display: 'flex', alignItems: 'center', padding: 'var(--spacing-half) var(--spacing-half) 0' }}>
+          <Checkbox
+            value={includeAllValue}
+            onChange={(event: any) =>
+              onIncludeAllChanged(event.currentTarget.checked)
+            }
+            ariaLabel="Include all changed files"
+            className="changes-tree-check-all"
+            label={`${files.length} changed file${files.length === 1 ? '' : 's'}`}
+          />
         </div>
 
         {rows.map(row => {
