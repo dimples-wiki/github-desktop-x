@@ -216,3 +216,29 @@
 1. **入口文件含 JSX 必须用 `.tsx`**——esbuild 对 `.ts` 内 JSX 不转换（静默产出空实现）；
 2. **namespace import（`import * as X`）若仅作 JSX 工厂/类型使用会被整体擦除**——统一用具名导入 `import { React } from './ghd'`；
 3. 插件内不得引用宿主 webpack 全局（`__DARWIN__` 等），一律经 API（`isDarwin`）。
+
+
+---
+
+# 第八轮：Changes 截图补齐 + Commits 弹窗视觉打磨（2026-10-08）
+
+针对「Changes 没看到截图」与「筛选弹窗边距大/无间距/关闭按钮丑」的修复：
+
+## 修复
+
+| 反馈 | 根因 | 修复 |
+|------|------|------|
+| 弹窗边距太大 | Popover 把子元素包在 `.popover-content`（基础内边距 `--spacing-double`） | 插件 CSS 覆盖为 `var(--spacing)`（与原生 changes filter-popover 相同的收紧） |
+| 组件之间没有间距 | `.filter-options` 的 gap 样式随作用域缺失 | 插件 CSS 补 `.commits-filter-popover .filter-options { gap: var(--spacing) }` |
+| 关闭按钮丑到爆 | 原生 close 按钮样式来自 `#changes-list` 作用域的 close-button mixin，弹窗拿到的是裸 `<button>` | 复刻 close-button mixin（16px、透明背景、secondary 色、hover 变主色） |
+
+## 实证
+
+- 弹窗指标实测：padding=10px、header→描述框间距 10px、关闭按钮 16px 透明背景
+- 截图：32-commits-popover-polished（打磨后）、27（开合整体）、28（应用筛选）
+- **Changes 页截图补齐**：30-changes-list-with-switch（默认 List + 搜索框行内图标开关）、23-tree-with-checkboxes（Tree + 勾选/全选/计数）、24-switch-back-to-list
+- 12 项断言全过（同第七轮清单）
+
+## 本轮踩坑
+
+styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function injectStyles()` 一并截掉 → styles.ts 变成零导出模块 → esbuild 警告 "Import will always be undefined" 并把调用擦成 `(void 0)()`（此前几轮的 "API 未声明/摇树" 部分现象同源）。**教训：改完插件文件必须确认 export 完整性，构建脚本对零导出模块要有告警。**

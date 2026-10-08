@@ -93,27 +93,60 @@ const css = `
 
 /* ── Advanced filters popover (host Popover, plugin layout) ── */
 
-#commits-view .filter-popover.commits-filter-popover,
-.commits-filter-popover.filter-popover {
+/* The host wraps children in .popover-content with --spacing-double padding;
+   the native changes filter popover tightens it. Mirror that. */
+.commits-filter-popover .popover-content {
+  padding: var(--spacing);
+}
+
+.commits-filter-popover {
   text-align: left;
-  min-width: 240px;
+  min-width: 260px;
 }
 
 .commits-filter-popover .filter-popover-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--spacing);
 }
 
 .commits-filter-popover .filter-popover-header h3 {
   margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Close button — mirrors the host close-button mixin
+   (styles/mixins/_close-button.scss), which is scoped to #changes-list. */
+.commits-filter-popover .close {
+  flex-shrink: 0;
+  border: 0;
+  height: 16px;
+  width: 16px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-secondary-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.commits-filter-popover .close .octicon {
+  pointer-events: none;
+}
+
+.commits-filter-popover .close:hover {
+  color: var(--text-color);
 }
 
 .commits-filter-popover .filter-options {
-  margin: var(--spacing) 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-half);
+  gap: var(--spacing);
+  margin: 0 0 var(--spacing) 0;
 }
 
 .commits-filter-popover .commits-filter-field {
@@ -166,54 +199,10 @@ const css = `
 }
 
 .commits-filter-popover .filter-options-footer {
-  padding: var(--spacing-half) 0 var(--spacing) 0;
-  margin-top: var(--spacing-quarter);
-  text-align: left;
-}
-
-/* ── List ── */
-
-.commits-commit-list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* ── Empty state (native blankslate pattern) ── */
-
-.commits-commit-list .commits-filter-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-half);
-  padding: var(--spacing);
-  max-width: 260px;
-}
-
-.commits-commit-list .commits-filter-empty .commits-filter-empty-icon.octicon {
-  width: 32px;
-  height: 32px;
-  fill: var(--text-secondary-color);
-  opacity: 0.6;
-}
-
-.commits-commit-list .commits-filter-empty h2 {
-  margin: 0;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-color);
-}
-
-.commits-commit-list .commits-filter-empty p {
-  margin: 0;
-  color: var(--text-secondary-color);
-  font-size: var(--font-size-sm);
-}
-
-.commits-commit-list .commits-filter-empty .commits-filter-empty-action {
+  border-top: var(--base-border);
+  padding-top: var(--spacing);
   margin-top: var(--spacing-half);
+  text-align: left;
 }
 `
 
