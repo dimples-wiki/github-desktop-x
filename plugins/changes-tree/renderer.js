@@ -476,7 +476,7 @@
           isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-name" }, row.name) : /* @__PURE__ */ React.createElement(
             ChangedFile,
             {
-              file: row.file,
+              file: { ...row.file, path: row.name },
               include,
               availableWidth: Math.max(
                 140,
@@ -484,7 +484,7 @@
               ),
               disableSelection: false,
               focused: false,
-              onIncludeChanged: this.props.onIncludeChanged
+              onIncludeChanged: (f, inc) => this.props.onIncludeChanged(row.file, inc)
             }
           ),
           isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null

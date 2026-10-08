@@ -624,7 +624,7 @@ export class ChangesTreeView extends React.Component<any, any> {
                 <span className="tree-name">{row.name}</span>
               ) : (
                 <ChangedFile
-                  file={row.file}
+                  file={{ ...row.file, path: row.name }}
                   include={include}
                   availableWidth={Math.max(
                     140,
@@ -632,7 +632,9 @@ export class ChangesTreeView extends React.Component<any, any> {
                   )}
                   disableSelection={false}
                   focused={false}
-                  onIncludeChanged={this.props.onIncludeChanged}
+                  onIncludeChanged={(f, inc) =>
+                    this.props.onIncludeChanged(row.file, inc)
+                  }
                 />
               )}
 
