@@ -38,9 +38,6 @@
     }
     return date;
   }
-  function isValidDateString(value) {
-    return value.trim().length === 0 || parseDateString(value) !== null;
-  }
   function getCommitAuthors(commits) {
     const authorsByEmail = /* @__PURE__ */ new Map();
     for (const commit of commits) {
@@ -167,11 +164,13 @@
       const email = event.currentTarget.value;
       this.onFilterChanged({ authorEmails: email === "" ? [] : [email] });
     };
-    onDateFromChanged = (value) => {
-      this.onFilterChanged({ dateFrom: value.trim().length === 0 ? null : value });
+    onDateFromChanged = (event) => {
+      const value = event.currentTarget.value;
+      this.onFilterChanged({ dateFrom: value.length === 0 ? null : value });
     };
-    onDateToChanged = (value) => {
-      this.onFilterChanged({ dateTo: value.trim().length === 0 ? null : value });
+    onDateToChanged = (event) => {
+      const value = event.currentTarget.value;
+      this.onFilterChanged({ dateTo: value.length === 0 ? null : value });
     };
     onClearFilters = () => {
       this.setState({ filter: EmptyCommitFilter });
@@ -223,8 +222,6 @@
       return count;
     }
     renderAdvancedFilters(filter) {
-      const dateFromInvalid = filter.dateFrom !== null && !isValidDateString(filter.dateFrom);
-      const dateToInvalid = filter.dateTo !== null && !isValidDateString(filter.dateTo);
       return /* @__PURE__ */ React.createElement("div", { className: "commits-filter-options" }, /* @__PURE__ */ React.createElement(
         TextBox,
         {
@@ -244,39 +241,23 @@
         },
         /* @__PURE__ */ React.createElement("option", { value: AllAuthorsValue }, __DARWIN__ ? "All Authors" : "All authors"),
         this.cachedAuthors.map((author) => /* @__PURE__ */ React.createElement("option", { key: author.email, value: author.email }, author.name))
-      )), /* @__PURE__ */ React.createElement("div", { className: "commits-filter-row commits-filter-dates" }, /* @__PURE__ */ React.createElement(
-        TextBox,
+      )), /* @__PURE__ */ React.createElement("div", { className: "commits-filter-date-row" }, /* @__PURE__ */ React.createElement(
+        "input",
         {
-          className: classNames("commits-filter-date-field", {
-            "invalid-date": dateFromInvalid
-          }),
-          placeholder: "YYYY-MM-DD",
-          ariaLabel: "From date",
+          type: "date",
+          "aria-label": "From date",
           value: filter.dateFrom ?? "",
-          onValueChanged: this.onDateFromChanged
+          onChange: this.onDateFromChanged
         }
       ), /* @__PURE__ */ React.createElement("span", { className: "commits-filter-dates-separator", "aria-hidden": "true" }, "\u2013"), /* @__PURE__ */ React.createElement(
-        TextBox,
+        "input",
         {
-          className: classNames("commits-filter-date-field", {
-            "invalid-date": dateToInvalid
-          }),
-          placeholder: "YYYY-MM-DD",
-          ariaLabel: "To date",
+          type: "date",
+          "aria-label": "To date",
           value: filter.dateTo ?? "",
-          onValueChanged: this.onDateToChanged
+          onChange: this.onDateToChanged
         }
-      )), /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: classNames("commits-filter-date-hint", {
-            visible: dateFromInvalid || dateToInvalid
-          }),
-          role: "alert"
-        },
-        __DARWIN__ ? "Invalid Date" : "Invalid date",
-        " \u2014 YYYY-MM-DD"
-      ));
+      )));
     }
     renderFilterPopover(filter) {
       const filtersActive = !isEmptyCommitFilter(filter);
@@ -512,6 +493,42 @@
   width: 100%;
 }
 
+#commits-view .changes-view-switch-icons {
+  display: flex;
+  align-items: center;
+  margin-left: var(--spacing-half);
+}
+
+#commits-view .changes-view-switch-icon {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary-color);
+  width: 26px;
+  height: var(--text-field-height);
+  padding: 0;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  border-radius: var(--border-radius);
+}
+
+#commits-view .changes-view-switch-icon:hover {
+  color: var(--text-color);
+  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.07));
+}
+
+#commits-view .changes-view-switch-icon.selected {
+  color: var(--box-selected-active-text-color);
+  background: var(--box-selected-active-background-color);
+}
+
+#commits-view .changes-view-switch-icon .octicon {
+  fill: currentColor;
+}
+
 /* \u2500\u2500 Summary row: match count \u2500\u2500 */
 
 #commits-view .commits-filter-summary {
@@ -530,15 +547,13 @@
 
 /* \u2500\u2500 Advanced filters popover (host Popover, plugin layout) \u2500\u2500 */
 
-/* The host wraps children in .popover-content with --spacing-double padding;
-   the native changes filter popover tightens it. Mirror that. */
-.commits-filter-popover .popover-content {
-  padding: var(--spacing);
-}
-
 .commits-filter-popover {
   text-align: left;
-  min-width: 260px;
+  min-width: 280px;
+}
+
+.commits-filter-popover .popover-content {
+  padding: var(--spacing);
 }
 
 .commits-filter-popover .filter-popover-header {
@@ -554,8 +569,6 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* Close button \u2014 mirrors the host close-button mixin
-   (styles/mixins/_close-button.scss), which is scoped to #changes-list. */
 .commits-filter-popover .close {
   flex-shrink: 0;
   border: 0;
@@ -579,11 +592,11 @@
   color: var(--text-color);
 }
 
-.commits-filter-popover .filter-options {
+.commits-filter-popover .commits-filter-options {
   display: flex;
   flex-direction: column;
   gap: var(--spacing);
-  margin: 0 0 var(--spacing) 0;
+  margin: 0;
 }
 
 .commits-filter-popover .commits-filter-field {
@@ -605,34 +618,35 @@
   width: 100%;
 }
 
-.commits-filter-popover .commits-filter-dates .commits-filter-date-field {
+.commits-filter-popover .commits-filter-date-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-half);
+}
+
+.commits-filter-popover .commits-filter-date-row input[type='date'] {
   flex: 1;
   min-width: 0;
+  height: var(--text-field-height);
+  padding: 0 var(--spacing-half);
+  border: var(--base-border);
+  border-radius: var(--border-radius);
+  background: var(--box-background-color);
+  color: var(--text-color);
+  font-size: var(--font-size);
+  font-family: var(--font-family-sans-serif);
 }
 
-.commits-filter-popover .commits-filter-dates .commits-filter-date-field.invalid-date input {
-  border-color: var(--error-color);
+.commits-filter-popover .commits-filter-date-row input[type='date']:focus {
+  outline: none;
+  border-color: var(--focus-color);
+  box-shadow: 0 0 0 1px var(--text-field-focus-shadow-color);
 }
 
-.commits-filter-popover .commits-filter-dates .commits-filter-date-field.invalid-date input:focus {
-  border-color: var(--error-color);
-  box-shadow: 0 0 0 1px rgba(248, 81, 73, 0.25);
-}
-
-.commits-filter-popover .commits-filter-dates .commits-filter-dates-separator {
+.commits-filter-popover .commits-filter-dates-separator {
   color: var(--text-secondary-color);
   flex: initial;
-}
-
-.commits-filter-popover .commits-filter-date-hint {
-  color: var(--error-color);
-  font-size: var(--font-size-sm);
-  visibility: hidden;
-  min-height: 18px;
-}
-
-.commits-filter-popover .commits-filter-date-hint.visible {
-  visibility: visible;
 }
 
 .commits-filter-popover .filter-options-footer {
@@ -640,6 +654,56 @@
   padding-top: var(--spacing);
   margin-top: var(--spacing-half);
   text-align: left;
+}
+
+/* \u2500\u2500 List \u2500\u2500 */
+
+.commits-commit-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.commits-commit-list #commit-list {
+  flex: 1;
+  min-height: 0;
+}
+
+/* \u2500\u2500 Empty state (native blankslate pattern) \u2500\u2500 */
+
+.commits-commit-list .commits-filter-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-half);
+  padding: var(--spacing);
+  max-width: 260px;
+}
+
+.commits-commit-list .commits-filter-empty .commits-filter-empty-icon.octicon {
+  width: 32px;
+  height: 32px;
+  fill: var(--text-secondary-color);
+  opacity: 0.6;
+}
+
+.commits-commit-list .commits-filter-empty h2 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+}
+
+.commits-commit-list .commits-filter-empty p {
+  margin: 0;
+  color: var(--text-secondary-color);
+  font-size: var(--font-size-sm);
+}
+
+.commits-commit-list .commits-filter-empty .commits-filter-empty-action {
+  margin-top: var(--spacing-half);
 }
 `;
   var injected = false;

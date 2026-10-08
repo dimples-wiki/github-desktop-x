@@ -4,10 +4,14 @@
  * SCSS, so the plugin ships its own CSS — built from the same design tokens
  * (CSS custom properties) the host uses.
  *
- * The filter bar replicates the host's `.filter-box-container` pattern
- * (filter options button joined with the search box) and the popover is the
- * host `Popover` component (`.popover-component` base styles come from the
- * host); only the plugin-specific layout lives here.
+ * Selector ↔ component checklist (keep in sync with the TSX):
+ *   #commits-view                        ← sidebar root
+ *   #commits-view .filter-box-container  ← joined filter button + search box
+ *   #commits-view .commits-filter-summary ← match count row
+ *   .commits-filter-popover              ← advanced filters popover
+ *   .commits-filter-popover .commits-filter-options ← popover field stack
+ *   .commits-commit-list                 ← list container
+ *   .commits-commit-list .commits-filter-empty ← blankslate
  */
 
 const css = `
@@ -75,6 +79,42 @@ const css = `
   width: 100%;
 }
 
+#commits-view .changes-view-switch-icons {
+  display: flex;
+  align-items: center;
+  margin-left: var(--spacing-half);
+}
+
+#commits-view .changes-view-switch-icon {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary-color);
+  width: 26px;
+  height: var(--text-field-height);
+  padding: 0;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  border-radius: var(--border-radius);
+}
+
+#commits-view .changes-view-switch-icon:hover {
+  color: var(--text-color);
+  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.07));
+}
+
+#commits-view .changes-view-switch-icon.selected {
+  color: var(--box-selected-active-text-color);
+  background: var(--box-selected-active-background-color);
+}
+
+#commits-view .changes-view-switch-icon .octicon {
+  fill: currentColor;
+}
+
 /* ── Summary row: match count ── */
 
 #commits-view .commits-filter-summary {
@@ -93,15 +133,13 @@ const css = `
 
 /* ── Advanced filters popover (host Popover, plugin layout) ── */
 
-/* The host wraps children in .popover-content with --spacing-double padding;
-   the native changes filter popover tightens it. Mirror that. */
-.commits-filter-popover .popover-content {
-  padding: var(--spacing);
-}
-
 .commits-filter-popover {
   text-align: left;
-  min-width: 260px;
+  min-width: 280px;
+}
+
+.commits-filter-popover .popover-content {
+  padding: var(--spacing);
 }
 
 .commits-filter-popover .filter-popover-header {
@@ -117,8 +155,6 @@ const css = `
   font-weight: var(--font-weight-semibold);
 }
 
-/* Close button — mirrors the host close-button mixin
-   (styles/mixins/_close-button.scss), which is scoped to #changes-list. */
 .commits-filter-popover .close {
   flex-shrink: 0;
   border: 0;
@@ -142,11 +178,11 @@ const css = `
   color: var(--text-color);
 }
 
-.commits-filter-popover .filter-options {
+.commits-filter-popover .commits-filter-options {
   display: flex;
   flex-direction: column;
   gap: var(--spacing);
-  margin: 0 0 var(--spacing) 0;
+  margin: 0;
 }
 
 .commits-filter-popover .commits-filter-field {
@@ -168,34 +204,35 @@ const css = `
   width: 100%;
 }
 
-.commits-filter-popover .commits-filter-dates .commits-filter-date-field {
+.commits-filter-popover .commits-filter-date-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-half);
+}
+
+.commits-filter-popover .commits-filter-date-row input[type='date'] {
   flex: 1;
   min-width: 0;
+  height: var(--text-field-height);
+  padding: 0 var(--spacing-half);
+  border: var(--base-border);
+  border-radius: var(--border-radius);
+  background: var(--box-background-color);
+  color: var(--text-color);
+  font-size: var(--font-size);
+  font-family: var(--font-family-sans-serif);
 }
 
-.commits-filter-popover .commits-filter-dates .commits-filter-date-field.invalid-date input {
-  border-color: var(--error-color);
+.commits-filter-popover .commits-filter-date-row input[type='date']:focus {
+  outline: none;
+  border-color: var(--focus-color);
+  box-shadow: 0 0 0 1px var(--text-field-focus-shadow-color);
 }
 
-.commits-filter-popover .commits-filter-dates .commits-filter-date-field.invalid-date input:focus {
-  border-color: var(--error-color);
-  box-shadow: 0 0 0 1px rgba(248, 81, 73, 0.25);
-}
-
-.commits-filter-popover .commits-filter-dates .commits-filter-dates-separator {
+.commits-filter-popover .commits-filter-dates-separator {
   color: var(--text-secondary-color);
   flex: initial;
-}
-
-.commits-filter-popover .commits-filter-date-hint {
-  color: var(--error-color);
-  font-size: var(--font-size-sm);
-  visibility: hidden;
-  min-height: 18px;
-}
-
-.commits-filter-popover .commits-filter-date-hint.visible {
-  visibility: visible;
 }
 
 .commits-filter-popover .filter-options-footer {
@@ -203,6 +240,56 @@ const css = `
   padding-top: var(--spacing);
   margin-top: var(--spacing-half);
   text-align: left;
+}
+
+/* ── List ── */
+
+.commits-commit-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.commits-commit-list #commit-list {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Empty state (native blankslate pattern) ── */
+
+.commits-commit-list .commits-filter-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-half);
+  padding: var(--spacing);
+  max-width: 260px;
+}
+
+.commits-commit-list .commits-filter-empty .commits-filter-empty-icon.octicon {
+  width: 32px;
+  height: 32px;
+  fill: var(--text-secondary-color);
+  opacity: 0.6;
+}
+
+.commits-commit-list .commits-filter-empty h2 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+}
+
+.commits-commit-list .commits-filter-empty p {
+  margin: 0;
+  color: var(--text-secondary-color);
+  font-size: var(--font-size-sm);
+}
+
+.commits-commit-list .commits-filter-empty .commits-filter-empty-action {
+  margin-top: var(--spacing-half);
 }
 `
 

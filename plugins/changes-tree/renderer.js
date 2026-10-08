@@ -174,7 +174,7 @@
     return /* @__PURE__ */ React.createElement(
       "svg",
       {
-        className: "tree-caret expanded",
+        className: `tree-caret${props.expanded ? " expanded" : ""}`,
         viewBox: "0 0 16 16",
         width: "16",
         height: "16",

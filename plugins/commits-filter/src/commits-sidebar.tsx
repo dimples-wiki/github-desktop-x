@@ -6,7 +6,6 @@ import {
   filterCommits,
   getCommitAuthors,
   isEmptyCommitFilter,
-  isValidDateString,
 } from './commits-filter-logic'
 
 const { CommitList, TextBox, Select, Button, Octicon } = (globalThis as any)
@@ -103,12 +102,14 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
     this.onFilterChanged({ authorEmails: email === '' ? [] : [email] })
   }
 
-  private onDateFromChanged = (value: string) => {
-    this.onFilterChanged({ dateFrom: value.trim().length === 0 ? null : value })
+  private onDateFromChanged = (event: any) => {
+    const value = event.currentTarget.value
+    this.onFilterChanged({ dateFrom: value.length === 0 ? null : value })
   }
 
-  private onDateToChanged = (value: string) => {
-    this.onFilterChanged({ dateTo: value.trim().length === 0 ? null : value })
+  private onDateToChanged = (event: any) => {
+    const value = event.currentTarget.value
+    this.onFilterChanged({ dateTo: value.length === 0 ? null : value })
   }
 
   private onClearFilters = () => {
@@ -171,11 +172,6 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
   }
 
   private renderAdvancedFilters(filter: ICommitFilter) {
-    const dateFromInvalid =
-      filter.dateFrom !== null && !isValidDateString(filter.dateFrom)
-    const dateToInvalid =
-      filter.dateTo !== null && !isValidDateString(filter.dateTo)
-
     return (
       <div className="commits-filter-options">
         <TextBox
@@ -208,37 +204,22 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
           </Select>
         </div>
 
-        <div className="commits-filter-row commits-filter-dates">
-          <TextBox
-            className={classNames('commits-filter-date-field', {
-              'invalid-date': dateFromInvalid,
-            })}
-            placeholder="YYYY-MM-DD"
-            ariaLabel="From date"
+        <div className="commits-filter-date-row">
+          <input
+            type="date"
+            aria-label="From date"
             value={filter.dateFrom ?? ''}
-            onValueChanged={this.onDateFromChanged}
+            onChange={this.onDateFromChanged}
           />
           <span className="commits-filter-dates-separator" aria-hidden="true">
             –
           </span>
-          <TextBox
-            className={classNames('commits-filter-date-field', {
-              'invalid-date': dateToInvalid,
-            })}
-            placeholder="YYYY-MM-DD"
-            ariaLabel="To date"
+          <input
+            type="date"
+            aria-label="To date"
             value={filter.dateTo ?? ''}
-            onValueChanged={this.onDateToChanged}
+            onChange={this.onDateToChanged}
           />
-        </div>
-
-        <div
-          className={classNames('commits-filter-date-hint', {
-            visible: dateFromInvalid || dateToInvalid,
-          })}
-          role="alert"
-        >
-          {__DARWIN__ ? 'Invalid Date' : 'Invalid date'} — YYYY-MM-DD
         </div>
       </div>
     )

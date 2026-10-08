@@ -51,29 +51,30 @@ export class ChangesFileViewSwitch extends React.Component<
     }
 
     const activeId = getActiveChangesFileViewId()
+    const isBuiltInActive = activeId === BuiltInChangesFileViewId
+
+    // Single-button toggle: the icon shows the view you'll switch TO.
+    const target = isBuiltInActive ? view : null
+    const title = isBuiltInActive
+      ? `View as ${view.title}`
+      : __DARWIN__
+        ? 'View as List'
+        : 'View as list'
 
     return (
       <div className="changes-view-switch-icons">
         {this.injectStylesOnce()}
         <button
-          className={`changes-view-switch-icon${
-            activeId === BuiltInChangesFileViewId ? ' selected' : ''
-          }`}
-          title={__DARWIN__ ? 'View as List' : 'View as list'}
-          aria-label={__DARWIN__ ? 'View as List' : 'View as list'}
-          onClick={() => setActiveChangesFileView(BuiltInChangesFileViewId)}
+          className={`changes-view-switch-icon${isBuiltInActive ? '' : ' selected'}`}
+          title={title}
+          aria-label={title}
+          onClick={() =>
+            setActiveChangesFileView(
+              isBuiltInActive ? view.id : BuiltInChangesFileViewId
+            )
+          }
         >
-          <Octicon symbol={octicons.listUnordered} />
-        </button>
-        <button
-          className={`changes-view-switch-icon${
-            activeId === view.id ? ' selected' : ''
-          }`}
-          title={`View as ${view.title}`}
-          aria-label={`View as ${view.title}`}
-          onClick={() => setActiveChangesFileView(view.id)}
-        >
-          <Octicon symbol={octicons.fileDirectory} />
+          <Octicon symbol={target ? octicons.fileDirectory : octicons.listUnordered} />
         </button>
       </div>
     )

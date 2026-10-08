@@ -242,3 +242,19 @@
 ## 本轮踩坑
 
 styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function injectStyles()` 一并截掉 → styles.ts 变成零导出模块 → esbuild 警告 "Import will always be undefined" 并把调用擦成 `(void 0)()`（此前几轮的 "API 未声明/摇树" 部分现象同源）。**教训：改完插件文件必须确认 export 完整性，构建脚本对零导出模块要有告警。**
+
+
+---
+
+# 第九轮：用户反馈修复复验（2026-10-08）
+
+针对用户指出的问题修复后，待独立盲测复验：
+
+| # | 反馈 | 修复 |
+|---|------|------|
+| 1 | Commits 列表空白 | 根因：动态插件注入 CSS 丢失 `.commits-commit-list`/`#commit-list` 高度规则（整段替换截断）→ 补齐，实测 14 行/491px |
+| 2 | List/Tree 切换图标不对、方向反 | 改为**单图标切换**（点击切换到另一视图，图标显示目标视图：List 激活显示文件夹=去 Tree，Tree 激活显示列表=回 List，非默认视图时按钮高亮）；树 caret className 修复为动态（折叠=右箭头/展开=下箭头） |
+| 3 | 弹窗表单项无间距 | 根因：组件类名 `commits-filter-options` 与 CSS `.filter-options` 不匹配 → CSS 对齐，实测 gap 10px、desc→select 10px、select→date 10px |
+| 4 | 日期输入蠢 | 改为原生 `<input type="date">`（Chromium 日历选择器，value 原生 YYYY-MM-DD 与过滤逻辑兼容，无无效输入可能） |
+
+（盲测结果待两个独立 agent 回填）
