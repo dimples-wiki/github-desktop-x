@@ -14,10 +14,14 @@ const api: any = globalThis.__GHD_EXTENSION_API__
 
 /** The host renderer's React (for the classic JSX factory binding). */
 export const React = api.React
+export const classNames = api.classNames
 /** Host components and helpers, octicons, enums and registration functions. */
 export const components = api.components
 export const octicons = api.octicons
 export const PopupType = api.PopupType
+export const Popover = api.Popover
+export const PopoverAnchorPosition = api.PopoverAnchorPosition
+export const PopoverDecoration = api.PopoverDecoration
 export const defaultErrorHandler = api.defaultErrorHandler
 export const registerRepositorySection = api.registerRepositorySection
 export const registerChangesFileView = api.registerChangesFileView

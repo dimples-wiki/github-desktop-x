@@ -9,6 +9,11 @@ import { TextBox } from '../../ui/lib/text-box'
 import { Select } from '../../ui/lib/select'
 import { Button } from '../../ui/lib/button'
 import { Checkbox, CheckboxValue } from '../../ui/lib/checkbox'
+import {
+  Popover,
+  PopoverAnchorPosition,
+  PopoverDecoration,
+} from '../../ui/lib/popover'
 import { DiffSelectionType } from '../../models/diff'
 import { Octicon } from '../../ui/octicons'
 import { defaultErrorHandler } from '../../ui/dispatcher'
@@ -32,6 +37,9 @@ function assembleExtensionApi() {
     isDarwin: process.platform === 'darwin',
     CheckboxValue,
     DiffSelectionType,
+    Popover,
+    PopoverAnchorPosition,
+    PopoverDecoration,
     React,
     classNames,
     octicons,

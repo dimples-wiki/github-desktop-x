@@ -2,9 +2,13 @@
   // plugins/commits-filter/src/ghd.ts
   var api = globalThis.__GHD_EXTENSION_API__;
   var React = api.React;
+  var classNames = api.classNames;
   var components = api.components;
   var octicons = api.octicons;
   var PopupType = api.PopupType;
+  var Popover = api.Popover;
+  var PopoverAnchorPosition = api.PopoverAnchorPosition;
+  var PopoverDecoration = api.PopoverDecoration;
   var defaultErrorHandler = api.defaultErrorHandler;
   var registerRepositorySection = api.registerRepositorySection;
   var registerChangesFileView = api.registerChangesFileView;
@@ -108,36 +112,25 @@
   }
 
   // plugins/commits-filter/src/commits-sidebar.tsx
-  var __DARWIN__ = globalThis.__GHD_EXTENSION_API__.isDarwin;
-  function cx(...parts) {
-    const out = [];
-    for (const part of parts) {
-      if (typeof part === "string") {
-        out.push(part);
-      } else if (part && typeof part === "object") {
-        for (const key of Object.keys(part)) {
-          if (part[key]) {
-            out.push(key);
-          }
-        }
-      } else if (part) {
-        out.push(String(part));
-      }
-    }
-    return out.join(" ");
-  }
   var { CommitList, TextBox, Select, Button, Octicon } = globalThis.__GHD_EXTENSION_API__.components;
   var octicons2 = globalThis.__GHD_EXTENSION_API__.octicons;
   var PopupType2 = globalThis.__GHD_EXTENSION_API__.PopupType;
+  var __DARWIN__ = globalThis.__GHD_EXTENSION_API__.isDarwin;
   var CloseToBottomThreshold = 10;
   var AllAuthorsValue = "";
   var CommitsSidebar = class extends React.Component {
     commitListRef = { current: null };
+    filterButtonRef = null;
     loadChangedFilesTimer = null;
     loadingMoreCommitsPromise = null;
+    /** Authors of the currently loaded commits (render scope cache). */
+    cachedAuthors = [];
     constructor(props) {
       super(props);
-      this.state = { filter: EmptyCommitFilter, expanded: false };
+      this.state = {
+        filter: EmptyCommitFilter,
+        isFilterOptionsOpen: false
+      };
     }
     componentWillMount() {
       this.props.dispatcher.initializeCompare(this.props.repository);
@@ -147,8 +140,15 @@
       ;
       this.commitListRef.current?.focus();
     }
-    onToggleExpanded = () => {
-      this.setState((prevState) => ({ expanded: !prevState.expanded }));
+    toggleFilterOptionsOpen = () => {
+      this.setState((prevState) => ({
+        isFilterOptionsOpen: !prevState.isFilterOptionsOpen
+      }));
+    };
+    closeFilterOptions = () => {
+      if (this.state.isFilterOptionsOpen) {
+        this.setState({ isFilterOptionsOpen: false });
+      }
     };
     onFilterChanged = (update) => {
       this.setState((prevState) => ({
@@ -205,10 +205,27 @@
         });
       }
     };
-    renderAdvancedFilters(authors, filter) {
+    /** The number of advanced-filter dimensions currently active. */
+    countAdvancedFilters(filter) {
+      let count = 0;
+      if (filter.authorEmails.length > 0) {
+        count++;
+      }
+      if (filter.descriptionTerm.trim().length > 0) {
+        count++;
+      }
+      if (filter.dateFrom !== null) {
+        count++;
+      }
+      if (filter.dateTo !== null) {
+        count++;
+      }
+      return count;
+    }
+    renderAdvancedFilters(filter) {
       const dateFromInvalid = filter.dateFrom !== null && !isValidDateString(filter.dateFrom);
       const dateToInvalid = filter.dateTo !== null && !isValidDateString(filter.dateTo);
-      return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+      return /* @__PURE__ */ React.createElement("div", { className: "commits-filter-options" }, /* @__PURE__ */ React.createElement(
         TextBox,
         {
           className: "commits-filter-field",
@@ -226,11 +243,11 @@
           onChange: this.onAuthorChanged
         },
         /* @__PURE__ */ React.createElement("option", { value: AllAuthorsValue }, __DARWIN__ ? "All Authors" : "All authors"),
-        authors.map((author) => /* @__PURE__ */ React.createElement("option", { key: author.email, value: author.email }, author.name))
+        this.cachedAuthors.map((author) => /* @__PURE__ */ React.createElement("option", { key: author.email, value: author.email }, author.name))
       )), /* @__PURE__ */ React.createElement("div", { className: "commits-filter-row commits-filter-dates" }, /* @__PURE__ */ React.createElement(
         TextBox,
         {
-          className: cx("commits-filter-date-field", {
+          className: classNames("commits-filter-date-field", {
             "invalid-date": dateFromInvalid
           }),
           placeholder: "YYYY-MM-DD",
@@ -241,7 +258,7 @@
       ), /* @__PURE__ */ React.createElement("span", { className: "commits-filter-dates-separator", "aria-hidden": "true" }, "\u2013"), /* @__PURE__ */ React.createElement(
         TextBox,
         {
-          className: cx("commits-filter-date-field", {
+          className: classNames("commits-filter-date-field", {
             "invalid-date": dateToInvalid
           }),
           placeholder: "YYYY-MM-DD",
@@ -252,7 +269,7 @@
       )), /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: cx("commits-filter-date-hint", {
+          className: classNames("commits-filter-date-hint", {
             visible: dateFromInvalid || dateToInvalid
           }),
           role: "alert"
@@ -261,25 +278,49 @@
         " \u2014 YYYY-MM-DD"
       ));
     }
-    renderFilterBar(authors, filter, filtersActive, hiddenFiltersActive, matchingCount, totalCount) {
+    renderFilterPopover(filter) {
+      const filtersActive = !isEmptyCommitFilter(filter);
+      return /* @__PURE__ */ React.createElement(
+        Popover,
+        {
+          className: "filter-popover commits-filter-popover",
+          ariaLabelledby: "commits-filter-header",
+          anchor: this.filterButtonRef,
+          anchorPosition: PopoverAnchorPosition.BottomRight,
+          decoration: PopoverDecoration.Balloon,
+          onMousedownOutside: this.closeFilterOptions,
+          onClickOutside: this.closeFilterOptions
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "filter-popover-header" }, /* @__PURE__ */ React.createElement("h3", { id: "commits-filter-header" }, __DARWIN__ ? "Advanced Filters" : "Advanced filters"), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            className: "close",
+            onClick: this.closeFilterOptions,
+            "aria-label": "Close"
+          },
+          /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons2.x })
+        )),
+        this.renderAdvancedFilters(filter),
+        filtersActive ? /* @__PURE__ */ React.createElement("div", { className: "filter-options-footer" }, /* @__PURE__ */ React.createElement(Button, { onClick: this.onClearFilters }, __DARWIN__ ? "Clear Filters" : "Clear filters")) : null
+      );
+    }
+    renderFilterBar(filter, filtersActive, advancedCount, matchingCount, totalCount) {
       const messageText = filter.messageTerms.join(" ");
-      const { expanded } = this.state;
-      return /* @__PURE__ */ React.createElement("div", { className: "commits-filter" }, /* @__PURE__ */ React.createElement("div", { className: "commits-filter-row commits-filter-primary" }, /* @__PURE__ */ React.createElement(
+      const hasAdvancedFilters = advancedCount > 0;
+      return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "filter-box-container" }, /* @__PURE__ */ React.createElement(
         Button,
         {
-          className: cx("commits-filter-toggle", {
-            selected: hiddenFiltersActive && !expanded
+          className: classNames("filter-button", {
+            active: hasAdvancedFilters
           }),
-          ariaExpanded: expanded,
-          tooltip: expanded ? __DARWIN__ ? "Hide Advanced Filters" : "Hide advanced filters" : __DARWIN__ ? "Show Advanced Filters" : "Show advanced filters",
-          onClick: this.onToggleExpanded
+          onClick: this.toggleFilterOptionsOpen,
+          ariaExpanded: this.state.isFilterOptionsOpen,
+          onButtonRef: (ref) => this.filterButtonRef = ref,
+          tooltip: __DARWIN__ ? "Filter Options" : "Filter options",
+          ariaLabel: __DARWIN__ ? "Filter Options" : "Filter options"
         },
-        /* @__PURE__ */ React.createElement(
-          Octicon,
-          {
-            symbol: expanded ? octicons2.chevronUp : hiddenFiltersActive ? octicons2.filter : octicons2.chevronDown
-          }
-        )
+        /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons2.filter })),
+        hasAdvancedFilters ? /* @__PURE__ */ React.createElement("span", { className: "active-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-bg" }, /* @__PURE__ */ React.createElement("div", { className: "badge" }))) : null
       ), /* @__PURE__ */ React.createElement(
         TextBox,
         {
@@ -290,14 +331,7 @@
           displayClearButton: messageText.length > 0,
           onValueChanged: this.onMessageTextChanged
         }
-      )), expanded ? this.renderAdvancedFilters(authors, filter) : null, /* @__PURE__ */ React.createElement("div", { className: "commits-filter-row commits-filter-summary" }, /* @__PURE__ */ React.createElement("span", { className: "commits-filter-count", "aria-live": "polite" }, filtersActive ? `${matchingCount} of ${totalCount} commits` : `${totalCount} commits`), filtersActive ? /* @__PURE__ */ React.createElement(
-        Button,
-        {
-          className: "commits-filter-clear-button",
-          onClick: this.onClearFilters
-        },
-        __DARWIN__ ? "Clear Filters" : "Clear filters"
-      ) : null));
+      )), this.state.isFilterOptionsOpen ? this.renderFilterPopover(filter) : null, /* @__PURE__ */ React.createElement("div", { className: "commits-filter-row commits-filter-summary" }, /* @__PURE__ */ React.createElement("span", { className: "commits-filter-count", "aria-live": "polite" }, filtersActive ? `${matchingCount} of ${totalCount} commits` : `${totalCount} commits`)));
     }
     render() {
       const {
@@ -321,9 +355,15 @@
       const filtersActive = !isEmptyCommitFilter(filter);
       const matchingCommits = filterCommits(commits, filter);
       const matchingSHAs = matchingCommits.map((c) => c.sha);
-      const authors = getCommitAuthors(commits);
-      const hiddenFiltersActive = filtersActive && !this.state.expanded && (filter.authorEmails.length > 0 || filter.descriptionTerm.trim().length > 0 || filter.dateFrom !== null || filter.dateTo !== null);
-      const emptyListMessage = filtersActive ? /* @__PURE__ */ React.createElement("div", { className: "commits-filter-empty" }, /* @__PURE__ */ React.createElement(Octicon, { className: "commits-filter-empty-icon", symbol: octicons2.search }), /* @__PURE__ */ React.createElement("h2", null, "No commits match your filters"), /* @__PURE__ */ React.createElement("p", null, "Try adjusting or clearing your filters."), /* @__PURE__ */ React.createElement(
+      this.cachedAuthors = getCommitAuthors(commits);
+      const advancedCount = this.countAdvancedFilters(filter);
+      const emptyListMessage = filtersActive ? /* @__PURE__ */ React.createElement("div", { className: "commits-filter-empty" }, /* @__PURE__ */ React.createElement(
+        Octicon,
+        {
+          className: "commits-filter-empty-icon",
+          symbol: octicons2.search
+        }
+      ), /* @__PURE__ */ React.createElement("h2", null, "No commits match your filters"), /* @__PURE__ */ React.createElement("p", null, "Try adjusting or clearing your filters."), /* @__PURE__ */ React.createElement(
         Button,
         {
           className: "commits-filter-empty-action",
@@ -341,10 +381,9 @@
           "aria-labelledby": "extension-tab-commits-filter"
         },
         this.renderFilterBar(
-          authors,
           filter,
           filtersActive,
-          hiddenFiltersActive,
+          advancedCount,
           matchingCommits.length,
           commits.length
         ),
@@ -388,7 +427,11 @@
                 });
               }
             },
-            onCreateTag: (targetCommitSha) => dispatcher.showCreateTagDialog(repository, targetCommitSha, localTags),
+            onCreateTag: (targetCommitSha) => dispatcher.showCreateTagDialog(
+              repository,
+              targetCommitSha,
+              localTags
+            ),
             onDeleteTag: (tagName) => dispatcher.showDeleteTagDialog(repository, tagName),
             onCherryPick: (commitsToPick) => this.props.onCherryPick(repository, commitsToPick),
             emptyListMessage,
@@ -413,102 +456,159 @@
   min-width: 0;
 }
 
-.commits-filter {
+/* \u2500\u2500 Filter bar: joined filter-options button + message search box \u2500\u2500 */
+
+#commits-view .filter-box-container {
+  display: flex;
+  align-items: center;
   background: var(--box-alt-background-color);
-  flex: initial;
   padding: var(--spacing-half);
   border-bottom: var(--base-border);
+  margin-bottom: 0;
+}
+
+#commits-view .filter-box-container input {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+#commits-view .filter-box-container .filter-button {
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+  border-right: none;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+  justify-content: space-between;
+  display: inline-flex;
+  align-items: center;
+  padding-right: var(--spacing-half);
+  position: relative;
+  flex: initial;
+}
+
+#commits-view .filter-box-container .filter-button.active span:first-child {
+  color: var(--box-selected-active-background-color);
+}
+
+#commits-view .filter-box-container .filter-button .active-badge {
+  position: absolute;
+  right: 18px;
+  top: 4px;
+}
+
+#commits-view .filter-box-container .filter-button .active-badge .badge-bg {
+  padding: 1px;
+  border-radius: 50%;
+  background-color: var(--secondary-button-background);
+}
+
+#commits-view .filter-box-container .filter-button .active-badge .badge {
+  width: 5px;
+  height: 5px;
+  background-color: var(--box-selected-active-background-color);
+  border-radius: 50%;
+}
+
+#commits-view .filter-box-container .commits-filter-field {
+  flex: 1;
+  width: 100%;
+}
+
+/* \u2500\u2500 Summary row: match count \u2500\u2500 */
+
+#commits-view .commits-filter-summary {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: var(--box-alt-background-color);
+  padding: 0 var(--spacing-half) var(--spacing-half);
+}
+
+#commits-view .commits-filter-summary .commits-filter-count {
+  color: var(--text-secondary-color);
+  font-size: var(--font-size-sm);
+  flex: 1;
+}
+
+/* \u2500\u2500 Advanced filters popover (host Popover, plugin layout) \u2500\u2500 */
+
+#commits-view .filter-popover.commits-filter-popover,
+.commits-filter-popover.filter-popover {
+  text-align: left;
+  min-width: 240px;
+}
+
+.commits-filter-popover .filter-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.commits-filter-popover .filter-popover-header h3 {
+  margin: 0;
+}
+
+.commits-filter-popover .filter-options {
+  margin: var(--spacing) 0;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-half);
 }
 
-.commits-filter .commits-filter-field {
-  flex: 1;
+.commits-filter-popover .commits-filter-field {
   width: 100%;
 }
 
-.commits-filter .commits-filter-row {
+.commits-filter-popover .commits-filter-row {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: var(--spacing-half);
 }
 
-.commits-filter .commits-filter-primary .commits-filter-toggle {
-  flex: initial;
-}
-
-.commits-filter .commits-filter-primary .commits-filter-toggle .octicon {
-  fill: var(--text-secondary-color);
-}
-
-.commits-filter .commits-filter-primary .commits-filter-toggle:hover .octicon {
-  fill: var(--text-color);
-}
-
-.commits-filter .commits-filter-primary .commits-filter-toggle.selected {
-  border-color: var(--box-border-accent-color);
-  color: var(--box-selected-active-text-color);
-  background: var(--box-selected-active-background-color);
-}
-
-.commits-filter .commits-filter-primary .commits-filter-toggle.selected .octicon {
-  fill: var(--text-color);
-}
-
-.commits-filter .commits-filter-author {
+.commits-filter-popover .commits-filter-author {
   flex: 1;
 }
 
-.commits-filter .commits-filter-author select {
+.commits-filter-popover .commits-filter-author select {
   width: 100%;
 }
 
-.commits-filter .commits-filter-dates .commits-filter-date-field {
+.commits-filter-popover .commits-filter-dates .commits-filter-date-field {
   flex: 1;
   min-width: 0;
 }
 
-.commits-filter .commits-filter-dates .commits-filter-date-field.invalid-date input {
+.commits-filter-popover .commits-filter-dates .commits-filter-date-field.invalid-date input {
   border-color: var(--error-color);
 }
 
-.commits-filter .commits-filter-dates .commits-filter-date-field.invalid-date input:focus {
+.commits-filter-popover .commits-filter-dates .commits-filter-date-field.invalid-date input:focus {
   border-color: var(--error-color);
   box-shadow: 0 0 0 1px rgba(248, 81, 73, 0.25);
 }
 
-.commits-filter .commits-filter-dates .commits-filter-dates-separator {
+.commits-filter-popover .commits-filter-dates .commits-filter-dates-separator {
   color: var(--text-secondary-color);
   flex: initial;
 }
 
-.commits-filter .commits-filter-date-hint {
+.commits-filter-popover .commits-filter-date-hint {
   color: var(--error-color);
   font-size: var(--font-size-sm);
-  margin-top: calc(var(--spacing-half) * -1);
   visibility: hidden;
   min-height: 18px;
 }
 
-.commits-filter .commits-filter-date-hint.visible {
+.commits-filter-popover .commits-filter-date-hint.visible {
   visibility: visible;
 }
 
-.commits-filter .commits-filter-summary {
-  justify-content: space-between;
+.commits-filter-popover .filter-options-footer {
+  padding: var(--spacing-half) 0 var(--spacing) 0;
+  margin-top: var(--spacing-quarter);
+  text-align: left;
 }
 
-.commits-filter .commits-filter-summary .commits-filter-count {
-  color: var(--text-secondary-color);
-  font-size: var(--font-size-sm);
-  flex: 1;
-}
-
-.commits-filter .commits-filter-summary .commits-filter-clear-button {
-  flex: initial;
-}
+/* \u2500\u2500 List \u2500\u2500 */
 
 .commits-commit-list {
   flex: 1;
@@ -516,6 +616,8 @@
   flex-direction: column;
   min-height: 0;
 }
+
+/* \u2500\u2500 Empty state (native blankslate pattern) \u2500\u2500 */
 
 .commits-commit-list .commits-filter-empty {
   display: flex;
@@ -563,7 +665,7 @@
     document.head.appendChild(style);
   }
 
-  // plugins/commits-filter/src/index.ts
+  // plugins/commits-filter/src/index.tsx
   injectStyles();
   registerRepositorySection({
     id: "commits-filter",

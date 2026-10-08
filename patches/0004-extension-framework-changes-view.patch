@@ -1,17 +1,18 @@
 diff --git a/app/src/ui/changes/filter-changes-list.tsx b/app/src/ui/changes/filter-changes-list.tsx
-index 11fad24..a5f4f63 100644
+index 11fad24..978dc6c 100644
 --- a/app/src/ui/changes/filter-changes-list.tsx
 +++ b/app/src/ui/changes/filter-changes-list.tsx
-@@ -73,6 +73,8 @@ import {
+@@ -73,6 +73,9 @@ import {
    applyFilters,
  } from './filter-changes-logic'
  import { ChangesListFilterOptions } from './changes-list-filter-options'
 +import { ChangesFileViewSlot } from '../../lib/extensions/changes-file-view-slot'
++import { ChangesFileViewSwitch } from '../../lib/extensions/changes-file-view-switch'
 +import { FileChange } from '../../models/status'
  import { HookProgress } from '../../lib/git'
  import { formatNumber } from '../../lib/format-number'
  
-@@ -1192,6 +1194,16 @@ export class FilterChangesList extends React.Component<
+@@ -1192,6 +1195,16 @@ export class FilterChangesList extends React.Component<
      this.props.onFileSelectionChanged(rows)
    }
  
@@ -28,7 +29,16 @@ index 11fad24..a5f4f63 100644
    private onFilesToCommitNotVisible = (onCommitAnyway: () => void) => {
      this.props.dispatcher.showPopup({
        type: PopupType.ConfirmCommitFilteredChanges,
-@@ -1332,56 +1344,69 @@ export class FilterChangesList extends React.Component<
+@@ -1309,6 +1322,8 @@ export class FilterChangesList extends React.Component<
+           onKeyDown={this.onFilterKeyDown}
+           value={this.props.fileListFilter.filterText}
+         />
++        {/* List/Tree icon switch for plugin-provided file views */}
++        <ChangesFileViewSwitch />
+       </div>
+     )
+   }
+@@ -1332,56 +1347,69 @@ export class FilterChangesList extends React.Component<
      return (
        <>
          <div className="changes-list-container file-list filtered-changes-list">

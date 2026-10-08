@@ -366,6 +366,7 @@ EDITS = [
         "import { ChangesListFilterOptions } from './changes-list-filter-options'",
         "import { ChangesListFilterOptions } from './changes-list-filter-options'\n"
         "import { ChangesFileViewSlot } from '../../lib/extensions/changes-file-view-slot'\n"
+        "import { ChangesFileViewSwitch } from '../../lib/extensions/changes-file-view-switch'\n"
         "import { FileChange } from '../../models/status'",
         1,
     ),
@@ -431,6 +432,18 @@ EDITS = [
         "          }\n"
         "        />\n"
         "        </div>",
+        1,
+    ),
+    (
+        "app/src/ui/changes/filter-changes-list.tsx",
+        "          value={this.props.fileListFilter.filterText}\n"
+        "        />\n"
+        "      </div>",
+        "          value={this.props.fileListFilter.filterText}\n"
+        "        />\n"
+        "          {/* List/Tree icon switch for plugin-provided file views */}\n"
+        "          <ChangesFileViewSwitch />\n"
+        "      </div>",
         1,
     ),
     # ---- F6: 菜单/快捷键由插件清单驱动 ----

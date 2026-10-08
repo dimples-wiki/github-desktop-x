@@ -180,3 +180,39 @@
 - esbuild 会为跨模块同名 const 重命名（api→api2），**append 到源码尾部的裸标识符引用会脱钩** → 尽量从 api 解构而非裸全局；
 - 插件 CSS 必须自带（宿主 SCSS 不覆盖动态插件）；
 - 插件引用宿主组件必须走 `api.components.*`（顶层没有的符号是 undefined）。
+
+
+---
+
+# 第七轮：Commits 筛选栏复刻原生 changes 形态 + List/Tree 图标开关（2026-10-08）
+
+针对「要原生 changes 页那种 filter 样式：点击输入框前的下拉按钮才出现更多筛选项；List/Tree 用图标切换且与搜索框同行」的改版验证（12 项断言全过）：
+
+| # | 断言 | 结果 |
+|---|------|------|
+| 1 | tabs 三枚（动态插件） | ✓ |
+| 2 | Changes 默认原生列表 | ✓ |
+| 3 | **List/Tree 图标开关在 filter 搜索框行内**（List 选中） | ✓ |
+| 4 | Tree 模式头部 "3 changed files" 计数 | ✓ |
+| 5 | 树形 5 行（层级+勾选） | ✓ |
+| 6 | Tree 模式开关仍可见且高亮 Tree | ✓ |
+| 7 | 勾选联动 Commit 按钮 3→2 | ✓ |
+| 8 | 切回原生列表 | ✓ |
+| 9 | **Commits 筛选栏 = 原生连体形态**（filter 图标按钮 + 搜索框，间距 <2px） | ✓ |
+| 10 | **点击图标弹出 Advanced Filters 气泡**（宿主 Popover，含描述/作者/日期 4 控件） | ✓ |
+| 11 | 气泡内描述筛选 desc=parser → 1 of 34 | ✓ |
+| 12 | 关闭按钮/点外关闭 | ✓ |
+
+截图：27-commits-native-filter-popover（复刻形态）、28-commits-popover-filter-applied、23/24。
+
+## 实现要点
+
+- 筛选按钮/徽标/连体样式复用宿主 `.filter-box-container` + `.filter-button` + `.active-badge` 类（commits 插件 CSS 内复刻其规则——宿主作用域限定于 `#changes-list`，插件需自带等价 CSS）
+- 高级筛选项使用宿主 **Popover 组件**（Balloon 装饰 + BottomRight 锚定 + 点外关闭，经 API 暴露给插件）
+- List/Tree 图标开关（`listUnordered`/`fileDirectory` octicons）由框架 `ChangesFileViewSwitch` 渲染于宿主 filter 行与插件视图行（两种模式各自可见）
+
+## 动态插件构建的三条铁律（本轮新增，详见 PROGRESS）
+
+1. **入口文件含 JSX 必须用 `.tsx`**——esbuild 对 `.ts` 内 JSX 不转换（静默产出空实现）；
+2. **namespace import（`import * as X`）若仅作 JSX 工厂/类型使用会被整体擦除**——统一用具名导入 `import { React } from './ghd'`；
+3. 插件内不得引用宿主 webpack 全局（`__DARWIN__` 等），一律经 API（`isDarwin`）。

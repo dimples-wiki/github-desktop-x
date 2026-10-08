@@ -1,28 +1,5 @@
 import { React } from './ghd'
-
-/** Runtime platform flag (the host injects __DARWIN__ only at build time). */
-const __DARWIN__ = (globalThis as any).__GHD_EXTENSION_API__.isDarwin
-
-/** Tiny className joiner (supports strings and {cls: bool} objects). */
-function cx(
-  ...parts: Array<string | false | null | undefined | Record<string, boolean | undefined>>
-): string {
-  const out: string[] = []
-  for (const part of parts) {
-    if (typeof part === 'string') {
-      out.push(part)
-    } else if (part && typeof part === 'object') {
-      for (const key of Object.keys(part)) {
-        if (part[key]) {
-          out.push(key)
-        }
-      }
-    } else if (part) {
-      out.push(String(part))
-    }
-  }
-  return out.join(' ')
-}
+import { Popover, PopoverAnchorPosition, PopoverDecoration, classNames } from './ghd'
 import {
   EmptyCommitFilter,
   ICommitFilter,
@@ -36,6 +13,7 @@ const { CommitList, TextBox, Select, Button, Octicon } = (globalThis as any)
   .__GHD_EXTENSION_API__.components
 const octicons = (globalThis as any).__GHD_EXTENSION_API__.octicons
 const PopupType = (globalThis as any).__GHD_EXTENSION_API__.PopupType
+const __DARWIN__ = (globalThis as any).__GHD_EXTENSION_API__.isDarwin
 
 /** If we're within this many rows from the bottom, load the next history batch. */
 const CloseToBottomThreshold = 10
@@ -44,24 +22,37 @@ const AllAuthorsValue = ''
 
 interface ICommitsSidebarState {
   readonly filter: ICommitFilter
-  readonly expanded: boolean
+
+  /** Whether the advanced filters popover (description/author/dates) is open. */
+  readonly isFilterOptionsOpen: boolean
 }
 
 /**
  * The "Commits" section: the history commit list of the current branch,
  * extended with client-side filtering (author / message / description /
- * author date range). Uses the host's own CommitList so selection, context
- * menus, keyboard navigation and pagination behave exactly like History.
+ * author date range).
+ *
+ * The filter bar mirrors the built-in changes list filter: a filter-options
+ * button joined with the message search box; the advanced filters live in a
+ * popover anchored to that button. The list itself is the host's CommitList,
+ * so selection, context menus and pagination behave exactly like History.
  */
 export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
   private readonly commitListRef = { current: null }
+  private filterButtonRef: any = null
   private loadChangedFilesTimer: any = null
   private loadingMoreCommitsPromise: Promise<void> | null = null
+
+  /** Authors of the currently loaded commits (render scope cache). */
+  private cachedAuthors: ReadonlyArray<any> = []
 
   public constructor(props: any) {
     super(props)
 
-    this.state = { filter: EmptyCommitFilter, expanded: false }
+    this.state = {
+      filter: EmptyCommitFilter,
+      isFilterOptionsOpen: false,
+    }
   }
 
   public componentWillMount() {
@@ -75,8 +66,16 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
     ;(this.commitListRef.current as any)?.focus()
   }
 
-  private onToggleExpanded = () => {
-    this.setState((prevState: any) => ({ expanded: !prevState.expanded }))
+  private toggleFilterOptionsOpen = () => {
+    this.setState((prevState: any) => ({
+      isFilterOptionsOpen: !prevState.isFilterOptionsOpen,
+    }))
+  }
+
+  private closeFilterOptions = () => {
+    if (this.state.isFilterOptionsOpen) {
+      this.setState({ isFilterOptionsOpen: false })
+    }
   }
 
   private onFilterChanged = (update: Partial<ICommitFilter>) => {
@@ -153,21 +152,40 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
     }
   }
 
-  private renderAdvancedFilters(
-    authors: ReadonlyArray<any>,
-    filter: ICommitFilter
-  ) {
+  /** The number of advanced-filter dimensions currently active. */
+  private countAdvancedFilters(filter: ICommitFilter): number {
+    let count = 0
+    if (filter.authorEmails.length > 0) {
+      count++
+    }
+    if (filter.descriptionTerm.trim().length > 0) {
+      count++
+    }
+    if (filter.dateFrom !== null) {
+      count++
+    }
+    if (filter.dateTo !== null) {
+      count++
+    }
+    return count
+  }
+
+  private renderAdvancedFilters(filter: ICommitFilter) {
     const dateFromInvalid =
       filter.dateFrom !== null && !isValidDateString(filter.dateFrom)
     const dateToInvalid =
       filter.dateTo !== null && !isValidDateString(filter.dateTo)
 
     return (
-      <>
+      <div className="commits-filter-options">
         <TextBox
           className="commits-filter-field"
-          placeholder={__DARWIN__ ? 'Filter by Description' : 'Filter by description'}
-          ariaLabel={__DARWIN__ ? 'Filter by Description' : 'Filter by description'}
+          placeholder={
+            __DARWIN__ ? 'Filter by Description' : 'Filter by description'
+          }
+          ariaLabel={
+            __DARWIN__ ? 'Filter by Description' : 'Filter by description'
+          }
           value={filter.descriptionTerm}
           displayClearButton={filter.descriptionTerm.length > 0}
           onValueChanged={this.onDescriptionTextChanged}
@@ -182,7 +200,7 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
             <option value={AllAuthorsValue}>
               {__DARWIN__ ? 'All Authors' : 'All authors'}
             </option>
-            {authors.map((author: any) => (
+            {this.cachedAuthors.map((author: any) => (
               <option key={author.email} value={author.email}>
                 {author.name}
               </option>
@@ -192,7 +210,7 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
 
         <div className="commits-filter-row commits-filter-dates">
           <TextBox
-            className={cx('commits-filter-date-field', {
+            className={classNames('commits-filter-date-field', {
               'invalid-date': dateFromInvalid,
             })}
             placeholder="YYYY-MM-DD"
@@ -204,7 +222,7 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
             –
           </span>
           <TextBox
-            className={cx('commits-filter-date-field', {
+            className={classNames('commits-filter-date-field', {
               'invalid-date': dateToInvalid,
             })}
             placeholder="YYYY-MM-DD"
@@ -214,59 +232,90 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
           />
         </div>
 
-        {/* Always rendered (reserved height) so that fixing the date does
-            not make the list jump. */}
         <div
-          className={cx('commits-filter-date-hint', {
+          className={classNames('commits-filter-date-hint', {
             visible: dateFromInvalid || dateToInvalid,
           })}
           role="alert"
         >
           {__DARWIN__ ? 'Invalid Date' : 'Invalid date'} — YYYY-MM-DD
         </div>
-      </>
+      </div>
+    )
+  }
+
+  private renderFilterPopover(filter: ICommitFilter) {
+    const filtersActive = !isEmptyCommitFilter(filter)
+
+    return (
+      <Popover
+        className="filter-popover commits-filter-popover"
+        ariaLabelledby="commits-filter-header"
+        anchor={this.filterButtonRef}
+        anchorPosition={PopoverAnchorPosition.BottomRight}
+        decoration={PopoverDecoration.Balloon}
+        onMousedownOutside={this.closeFilterOptions}
+        onClickOutside={this.closeFilterOptions}
+      >
+        <div className="filter-popover-header">
+          <h3 id="commits-filter-header">
+            {__DARWIN__ ? 'Advanced Filters' : 'Advanced filters'}
+          </h3>
+          <button
+            className="close"
+            onClick={this.closeFilterOptions}
+            aria-label="Close"
+          >
+            <Octicon symbol={octicons.x} />
+          </button>
+        </div>
+
+        {this.renderAdvancedFilters(filter)}
+
+        {filtersActive ? (
+          <div className="filter-options-footer">
+            <Button onClick={this.onClearFilters}>
+              {__DARWIN__ ? 'Clear Filters' : 'Clear filters'}
+            </Button>
+          </div>
+        ) : null}
+      </Popover>
     )
   }
 
   private renderFilterBar(
-    authors: ReadonlyArray<any>,
     filter: ICommitFilter,
     filtersActive: boolean,
-    hiddenFiltersActive: boolean,
+    advancedCount: number,
     matchingCount: number,
     totalCount: number
   ) {
     const messageText = filter.messageTerms.join(' ')
-    const { expanded } = this.state
+    const hasAdvancedFilters = advancedCount > 0
 
     return (
-      <div className="commits-filter">
-        <div className="commits-filter-row commits-filter-primary">
+      <>
+        <div className="filter-box-container">
           <Button
-            className={cx('commits-filter-toggle', {
-              selected: hiddenFiltersActive && !expanded,
+            className={classNames('filter-button', {
+              active: hasAdvancedFilters,
             })}
-            ariaExpanded={expanded}
-            tooltip={
-              expanded
-                ? __DARWIN__
-                  ? 'Hide Advanced Filters'
-                  : 'Hide advanced filters'
-                : __DARWIN__
-                  ? 'Show Advanced Filters'
-                  : 'Show advanced filters'
-            }
-            onClick={this.onToggleExpanded}
+            onClick={this.toggleFilterOptionsOpen}
+            ariaExpanded={this.state.isFilterOptionsOpen}
+            onButtonRef={(ref: any) => (this.filterButtonRef = ref)}
+            tooltip={__DARWIN__ ? 'Filter Options' : 'Filter options'}
+            ariaLabel={__DARWIN__ ? 'Filter Options' : 'Filter options'}
           >
-            <Octicon
-              symbol={
-                expanded
-                  ? octicons.chevronUp
-                  : hiddenFiltersActive
-                    ? octicons.filter
-                    : octicons.chevronDown
-              }
-            />
+            <span>
+              <Octicon symbol={octicons.filter} />
+            </span>
+            {hasAdvancedFilters ? (
+              <span className="active-badge">
+                <div className="badge-bg">
+                  <div className="badge"></div>
+                </div>
+              </span>
+            ) : null}
           </Button>
 
           <TextBox
@@ -279,7 +328,9 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
           />
         </div>
 
-        {expanded ? this.renderAdvancedFilters(authors, filter) : null}
+        {this.state.isFilterOptionsOpen
+          ? this.renderFilterPopover(filter)
+          : null}
 
         <div className="commits-filter-row commits-filter-summary">
           <span className="commits-filter-count" aria-live="polite">
@@ -287,16 +338,8 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
               ? `${matchingCount} of ${totalCount} commits`
               : `${totalCount} commits`}
           </span>
-          {filtersActive ? (
-            <Button
-              className="commits-filter-clear-button"
-              onClick={this.onClearFilters}
-            >
-              {__DARWIN__ ? 'Clear Filters' : 'Clear filters'}
-            </Button>
-          ) : null}
         </div>
-      </div>
+      </>
     )
   }
 
@@ -324,20 +367,16 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
     const filtersActive = !isEmptyCommitFilter(filter)
     const matchingCommits = filterCommits(commits, filter)
     const matchingSHAs = matchingCommits.map((c: any) => c.sha)
-    const authors = getCommitAuthors(commits)
-
-    const hiddenFiltersActive =
-      filtersActive &&
-      !this.state.expanded &&
-      (filter.authorEmails.length > 0 ||
-        filter.descriptionTerm.trim().length > 0 ||
-        filter.dateFrom !== null ||
-        filter.dateTo !== null)
+    this.cachedAuthors = getCommitAuthors(commits)
+    const advancedCount = this.countAdvancedFilters(filter)
 
     const emptyListMessage = filtersActive
       ? ((
           <div className="commits-filter-empty">
-            <Octicon className="commits-filter-empty-icon" symbol={octicons.search} />
+            <Octicon
+              className="commits-filter-empty-icon"
+              symbol={octicons.search}
+            />
             <h2>No commits match your filters</h2>
             <p>Try adjusting or clearing your filters.</p>
             <Button
@@ -360,10 +399,9 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
         aria-labelledby="extension-tab-commits-filter"
       >
         {this.renderFilterBar(
-          authors,
           filter,
           filtersActive,
-          hiddenFiltersActive,
+          advancedCount,
           matchingCommits.length,
           commits.length
         )}
@@ -412,7 +450,11 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
               }
             }}
             onCreateTag={(targetCommitSha: string) =>
-              dispatcher.showCreateTagDialog(repository, targetCommitSha, localTags)
+              dispatcher.showCreateTagDialog(
+                repository,
+                targetCommitSha,
+                localTags
+              )
             }
             onDeleteTag={(tagName: string) =>
               dispatcher.showDeleteTagDialog(repository, tagName)
