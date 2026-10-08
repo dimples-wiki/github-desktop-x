@@ -597,6 +597,7 @@ export class ChangesTreeView extends React.Component<any, any> {
               <span>
                 <Octicon symbol={octicons.filter} />
               </span>
+              <Octicon symbol={octicons.chevronDown} />
               {activeCount > 0 ? (
                 <span className="active-badge">
                   <div className="badge-bg">

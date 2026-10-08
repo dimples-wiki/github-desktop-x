@@ -474,6 +474,7 @@
           ariaLabel: "Filter Options"
         },
         /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.filter })),
+        /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.chevronDown }),
         activeCount > 0 ? /* @__PURE__ */ React.createElement("span", { className: "active-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-bg" }, /* @__PURE__ */ React.createElement("div", { className: "badge" }))) : null
       ), /* @__PURE__ */ React.createElement(
         TextBox,

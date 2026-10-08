@@ -345,3 +345,9 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 | 切换图标不对/激活态多余 | 单图标=当前视图（listUnordered ⇄ list-tree SVG） | 30/41 ✓ |
 | 行高不一致（树 258px 溢出） | 29px 固定行高（=原生 changes 列表行高） | 41 ✓ |
 | 关闭按钮丑 | 复刻宿主 close-button mixin | 39 ✓ |
+
+
+## 第十四轮（最终）：/Applications 安装版验证通过
+
+从 /Applications 安装位置启动的应用中，Commits 筛选和 Changes Tree 视图均正常工作。
+用户截图确认了 include-all 位置、状态徽标着色、叶子 basename 显示均与原生一致。
