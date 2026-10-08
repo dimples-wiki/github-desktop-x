@@ -30,6 +30,9 @@ interface IChangesFileViewSlotProps {
   /** Tri-state of the "include all" checkbox (host CheckboxValue). */
   readonly includeAllValue: any
 
+  /** Available width for file rows (passed through to plugin rows). */
+  readonly availableWidth: number
+
   /** Host callback setting inclusion for every file at once. */
   readonly onIncludeAllChanged: (include: boolean) => void
 }
@@ -140,6 +143,7 @@ export class ChangesFileViewSlot extends React.Component<
     return (
       <View
         files={files}
+        availableWidth={this.props.availableWidth}
         onSelectionChanged={this.props.onSelectionChanged}
         onIncludeChanged={this.props.onIncludeChanged}
         includeAllValue={this.props.includeAllValue}

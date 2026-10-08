@@ -5,6 +5,7 @@ import classNames from 'classnames'
 import * as octicons from '../../ui/octicons/octicons.generated'
 import { PopupType } from '../../models/popup'
 import { CommitList } from '../../ui/history/commit-list'
+import { ChangedFile } from '../../ui/changes/changed-file'
 import { TextBox } from '../../ui/lib/text-box'
 import { Select } from '../../ui/lib/select'
 import { Button } from '../../ui/lib/button'
@@ -51,6 +52,7 @@ function assembleExtensionApi() {
     /** Host building blocks plugins may reuse for a native look & feel. */
     components: {
       CommitList,
+      ChangedFile,
       TextBox,
       Select,
       Button,

@@ -414,6 +414,7 @@ EDITS = [
         "                include\n"
         "              )\n"
         "            }\n"
+        "            availableWidth={this.props.availableWidth}\n"
         "            fallback={\n"
         "          <AugmentedSectionFilterList<IChangesListItem>",
         1,

@@ -4,29 +4,18 @@ import { React } from './ghd'
  * The "Tree" changes file view: renders the working directory changes as a
  * collapsible folder hierarchy.
  *
- * Parity with the built-in flat list:
- *  - per-file include checkboxes (commit staging) and a tri-state
- *    "include all" header checkbox with a "N of M changed files" count,
- *  - clicking a file selects it in the host (the diff pane follows).
- *
- * Keyboard navigation and the context menu remain provided by the built-in
- * list — switch back any time with the List/Tree switch above the list.
+ * Leaf rows reuse the host's `ChangedFile` component, so include checkboxes,
+ * the right-hand status badge and hover behavior are exactly the same as the
+ * built-in flat list. A tri-state "include all" header with the changed
+ * files count is rendered above the tree. Keyboard navigation and the
+ * context menu remain provided by the built-in list — switch back any time
+ * with the List/Tree icon switch.
  */
 
 const api = (globalThis as any).__GHD_EXTENSION_API__
-const { Checkbox } = api.components
+const { Checkbox, ChangedFile } = api.components
 const CheckboxValue = api.CheckboxValue
 const DiffSelectionType = api.DiffSelectionType
-
-const StatusColors: Record<string, string> = {
-  New: '#3fb950',
-  Modified: '#d29922',
-  Deleted: '#f85149',
-  Renamed: '#a371f7',
-  Copied: '#a371f7',
-  Conflicted: '#f85149',
-  Untracked: '#d29922',
-}
 
 interface ITreeNode {
   readonly name: string
@@ -67,14 +56,6 @@ function buildTree(files: ReadonlyArray<any>): Map<string, ITreeNode> {
   }
 
   return root
-}
-
-function statusColor(file: any): string {
-  return StatusColors[file?.status?.kind] ?? '#8b949e'
-}
-
-function statusLabel(file: any): string {
-  return String(file?.status?.kind ?? 'Modified')
 }
 
 /** Whether the file is staged for the next commit (include checkbox on). */
@@ -172,25 +153,27 @@ export class ChangesTreeView extends React.Component<any, any> {
   }
 
   public render() {
-    const { files, onIncludeChanged } = this.props
+    const { files } = this.props
     const tree = buildTree(files)
 
     const rows: ITreeRow[] = []
     flattenTree(tree, this.state.collapsedFolders, 0, rows)
 
     return (
-      <div className="changes-tree">
+      <div className="changes-tree file-list">
         {styleInjection()}
         {this.renderHeaderRow()}
 
         {rows.map(row => {
           const isFolder = row.file === undefined
-          const included = !isFolder && isIncluded(row.file)
+          const include =
+            !isFolder &&
+            row.file.selection.getSelectionType() === DiffSelectionType.All
 
           return (
             <div
               key={row.path}
-              className={`changes-tree-row${included ? ' included' : ''}`}
+              className={`changes-tree-row${include ? ' included' : ''}`}
               style={{ paddingLeft: 8 + row.depth * 14 }}
               onClick={() => {
                 if (isFolder) {
@@ -206,26 +189,26 @@ export class ChangesTreeView extends React.Component<any, any> {
                   expanded={!this.state.collapsedFolders.has(row.path)}
                 />
               ) : (
-                <input
-                  type="checkbox"
-                  className="tree-include-checkbox"
-                  checked={included}
-                  onClick={(event: any) => event.stopPropagation()}
-                  onChange={(event: any) =>
-                    onIncludeChanged(row.file, event.currentTarget.checked)
-                  }
-                />
+                <span className="tree-indent" aria-hidden="true" />
               )}
 
-              {!isFolder ? (
-                <span
-                  className="tree-status-dot"
-                  style={{ background: statusColor(row.file) }}
-                  title={statusLabel(row.file)}
+              {isFolder ? (
+                <span className="tree-name">{row.name}</span>
+              ) : (
+                <ChangedFile
+                  file={row.file}
+                  include={include}
+                  availableWidth={Math.max(
+                    140,
+                    (this.props.availableWidth ?? 340) -
+                      24 -
+                      row.depth * 14
+                  )}
+                  disableSelection={false}
+                  focused={false}
+                  onIncludeChanged={this.props.onIncludeChanged}
                 />
-              ) : null}
-
-              <span className="tree-name">{row.name}</span>
+              )}
 
               {isFolder ? (
                 <span className="tree-count">{row.descendantCount}</span>
@@ -266,23 +249,15 @@ const treeCss = `
 .changes-tree-header .checkbox-component { display: flex; }
 .changes-tree { flex: 1; overflow-y: auto; user-select: none; }
 .changes-tree-row {
-  display: flex; align-items: center; height: 29px;
+  display: flex; align-items: center;
   padding-right: var(--spacing, 8px); cursor: default;
-  border-bottom: 1px solid var(--box-border-color, rgba(255,255,255,0.07));
 }
 .changes-tree-row:hover { background: var(--box-hover-background-color, rgba(255,255,255,0.04)); }
-.changes-tree-row.included .tree-name { color: var(--text-color); }
 .changes-tree-row .tree-caret {
   width: 16px; height: 16px; flex: initial; margin-right: 2px;
   fill: var(--text-secondary-color);
 }
-.changes-tree-row .tree-status-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex: initial;
-  margin-right: 6px; margin-left: 2px;
-}
-.changes-tree-row .tree-include-checkbox {
-  margin: 0 6px 0 2px; flex: initial; accent-color: var(--accent-color, #2f6feb);
-}
+.changes-tree-row .tree-indent { width: 10px; flex: initial; }
 .changes-tree-row .tree-name {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: var(--font-size, 12px); color: var(--text-secondary-color);
@@ -294,7 +269,7 @@ const treeCss = `
 `
 
 // Registered after the component declaration (class declarations are not
-// hoisted). While registered, the tree view is available via the List/Tree
+// hoisted). While registered, the tree view is available via the icon
 // switch; the built-in list remains the default.
 api.registerChangesFileView({
   id: 'changes-tree',

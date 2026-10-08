@@ -6,18 +6,9 @@
 
   // plugins/changes-tree/src/index.tsx
   var api2 = globalThis.__GHD_EXTENSION_API__;
-  var { Checkbox } = api2.components;
+  var { Checkbox, ChangedFile } = api2.components;
   var CheckboxValue = api2.CheckboxValue;
   var DiffSelectionType = api2.DiffSelectionType;
-  var StatusColors = {
-    New: "#3fb950",
-    Modified: "#d29922",
-    Deleted: "#f85149",
-    Renamed: "#a371f7",
-    Copied: "#a371f7",
-    Conflicted: "#f85149",
-    Untracked: "#d29922"
-  };
   function buildTree(files) {
     const root = /* @__PURE__ */ new Map();
     for (const file of files) {
@@ -44,15 +35,6 @@
       }
     }
     return root;
-  }
-  function statusColor(file) {
-    return StatusColors[file?.status?.kind] ?? "#8b949e";
-  }
-  function statusLabel(file) {
-    return String(file?.status?.kind ?? "Modified");
-  }
-  function isIncluded(file) {
-    return file.selection.getSelectionType() === DiffSelectionType.All;
   }
   function styleInjection() {
     return /* @__PURE__ */ React.createElement("style", null, treeCss);
@@ -118,18 +100,18 @@
       ));
     }
     render() {
-      const { files, onIncludeChanged } = this.props;
+      const { files } = this.props;
       const tree = buildTree(files);
       const rows = [];
       flattenTree(tree, this.state.collapsedFolders, 0, rows);
-      return /* @__PURE__ */ React.createElement("div", { className: "changes-tree" }, styleInjection(), this.renderHeaderRow(), rows.map((row) => {
+      return /* @__PURE__ */ React.createElement("div", { className: "changes-tree file-list" }, styleInjection(), this.renderHeaderRow(), rows.map((row) => {
         const isFolder = row.file === void 0;
-        const included = !isFolder && isIncluded(row.file);
+        const include = !isFolder && row.file.selection.getSelectionType() === DiffSelectionType.All;
         return /* @__PURE__ */ React.createElement(
           "div",
           {
             key: row.path,
-            className: `changes-tree-row${included ? " included" : ""}`,
+            className: `changes-tree-row${include ? " included" : ""}`,
             style: { paddingLeft: 8 + row.depth * 14 },
             onClick: () => {
               if (isFolder) {
@@ -145,25 +127,21 @@
             {
               expanded: !this.state.collapsedFolders.has(row.path)
             }
-          ) : /* @__PURE__ */ React.createElement(
-            "input",
+          ) : /* @__PURE__ */ React.createElement("span", { className: "tree-indent", "aria-hidden": "true" }),
+          isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-name" }, row.name) : /* @__PURE__ */ React.createElement(
+            ChangedFile,
             {
-              type: "checkbox",
-              className: "tree-include-checkbox",
-              checked: included,
-              onClick: (event) => event.stopPropagation(),
-              onChange: (event) => onIncludeChanged(row.file, event.currentTarget.checked)
+              file: row.file,
+              include,
+              availableWidth: Math.max(
+                140,
+                (this.props.availableWidth ?? 340) - 24 - row.depth * 14
+              ),
+              disableSelection: false,
+              focused: false,
+              onIncludeChanged: this.props.onIncludeChanged
             }
           ),
-          !isFolder ? /* @__PURE__ */ React.createElement(
-            "span",
-            {
-              className: "tree-status-dot",
-              style: { background: statusColor(row.file) },
-              title: statusLabel(row.file)
-            }
-          ) : null,
-          /* @__PURE__ */ React.createElement("span", { className: "tree-name" }, row.name),
           isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
         );
       }));
@@ -192,23 +170,15 @@
 .changes-tree-header .checkbox-component { display: flex; }
 .changes-tree { flex: 1; overflow-y: auto; user-select: none; }
 .changes-tree-row {
-  display: flex; align-items: center; height: 29px;
+  display: flex; align-items: center;
   padding-right: var(--spacing, 8px); cursor: default;
-  border-bottom: 1px solid var(--box-border-color, rgba(255,255,255,0.07));
 }
 .changes-tree-row:hover { background: var(--box-hover-background-color, rgba(255,255,255,0.04)); }
-.changes-tree-row.included .tree-name { color: var(--text-color); }
 .changes-tree-row .tree-caret {
   width: 16px; height: 16px; flex: initial; margin-right: 2px;
   fill: var(--text-secondary-color);
 }
-.changes-tree-row .tree-status-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex: initial;
-  margin-right: 6px; margin-left: 2px;
-}
-.changes-tree-row .tree-include-checkbox {
-  margin: 0 6px 0 2px; flex: initial; accent-color: var(--accent-color, #2f6feb);
-}
+.changes-tree-row .tree-indent { width: 10px; flex: initial; }
 .changes-tree-row .tree-name {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: var(--font-size, 12px); color: var(--text-secondary-color);
