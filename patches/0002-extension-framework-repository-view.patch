@@ -1,5 +1,5 @@
 diff --git a/app/src/ui/repository.tsx b/app/src/ui/repository.tsx
-index d716e31..9b1edf2 100644
+index d716e31..0d8dab0 100644
 --- a/app/src/ui/repository.tsx
 +++ b/app/src/ui/repository.tsx
 @@ -8,6 +8,15 @@ import { NoChanges } from './changes/no-changes'
@@ -75,7 +75,7 @@ index d716e31..9b1edf2 100644
    public scrollCompareListToTop(): void {
      this.forceCompareListScrollTop = true
  
-@@ -215,10 +248,17 @@ export class RepositoryView extends React.Component<
+@@ -215,10 +248,16 @@ export class RepositoryView extends React.Component<
    }
  
    private renderTabs(): JSX.Element {
@@ -85,16 +85,15 @@ index d716e31..9b1edf2 100644
          ? Tab.Changes
 -        : Tab.History
 +        : this.props.state.selectedSection === RepositorySectionTab.History
-+          ? Tab.History
-+          : ExtensionTabBase +
-+            extensions.findIndex(
-+              e =>
-+                getSectionForExtension(e) === this.props.state.selectedSection
-+            )
++        ? Tab.History
++        : ExtensionTabBase +
++          extensions.findIndex(
++            e => getSectionForExtension(e) === this.props.state.selectedSection
++          )
  
      return (
        <TabBar selectedIndex={selectedTab} onTabClicked={this.onTabClicked}>
-@@ -230,6 +270,16 @@ export class RepositoryView extends React.Component<
+@@ -230,6 +269,16 @@ export class RepositoryView extends React.Component<
          <div className="with-indicator" id="history-tab">
            <span>History</span>
          </div>
@@ -111,7 +110,7 @@ index d716e31..9b1edf2 100644
        </TabBar>
      )
    }
-@@ -384,6 +434,36 @@ export class RepositoryView extends React.Component<
+@@ -384,6 +433,36 @@ export class RepositoryView extends React.Component<
      )
    }
  
@@ -148,7 +147,7 @@ index d716e31..9b1edf2 100644
    private renderSidebarContents(): JSX.Element {
      const selectedSection = this.props.state.selectedSection
  
-@@ -391,8 +471,10 @@ export class RepositoryView extends React.Component<
+@@ -391,8 +470,10 @@ export class RepositoryView extends React.Component<
        return this.renderChangesSidebar()
      } else if (selectedSection === RepositorySectionTab.History) {
        return this.renderCompareSidebar()
@@ -160,7 +159,7 @@ index d716e31..9b1edf2 100644
      }
    }
  
-@@ -637,8 +719,11 @@ export class RepositoryView extends React.Component<
+@@ -637,8 +718,11 @@ export class RepositoryView extends React.Component<
        return this.renderContentForChanges()
      } else if (selectedSection === RepositorySectionTab.History) {
        return this.renderContentForHistory()
@@ -173,7 +172,7 @@ index d716e31..9b1edf2 100644
      }
    }
  
-@@ -666,10 +751,23 @@ export class RepositoryView extends React.Component<
+@@ -666,10 +750,23 @@ export class RepositoryView extends React.Component<
  
    public componentDidMount() {
      window.addEventListener('keydown', this.onGlobalKeyDown)
@@ -197,7 +196,7 @@ index d716e31..9b1edf2 100644
    }
  
    public componentDidUpdate(): void {
-@@ -682,6 +780,12 @@ export class RepositoryView extends React.Component<
+@@ -682,6 +779,12 @@ export class RepositoryView extends React.Component<
        this.focusHistoryNeeded = false
        this.compareSidebarRef.current?.focusHistory()
      }
@@ -210,7 +209,7 @@ index d716e31..9b1edf2 100644
    }
  
    private onGlobalKeyDown = (event: KeyboardEvent) => {
-@@ -703,10 +807,20 @@ export class RepositoryView extends React.Component<
+@@ -703,10 +806,20 @@ export class RepositoryView extends React.Component<
    }
  
    private changeTab() {
@@ -235,14 +234,12 @@ index d716e31..9b1edf2 100644
  
      this.props.dispatcher.changeRepositorySection(
        this.props.repository,
-@@ -718,7 +832,9 @@ export class RepositoryView extends React.Component<
+@@ -718,6 +831,8 @@ export class RepositoryView extends React.Component<
      const section =
        tab === Tab.History
          ? RepositorySectionTab.History
--        : RepositorySectionTab.Changes
 +        : tab >= ExtensionTabBase
-+          ? sectionForExtensionIndex(tab - ExtensionTabBase)
-+          : RepositorySectionTab.Changes
++        ? sectionForExtensionIndex(tab - ExtensionTabBase)
+         : RepositorySectionTab.Changes
  
      this.props.dispatcher.changeRepositorySection(
-       this.props.repository,
