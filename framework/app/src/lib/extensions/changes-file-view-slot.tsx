@@ -124,14 +124,15 @@ export class ChangesFileViewSlot extends React.Component<
           />
           <ChangesFileViewSwitch />
         </div>
-        {this.renderPluginView(view, filteredFiles)}
+        {this.renderPluginView(view, filteredFiles, this.state.filterText)}
       </div>
     )
   }
 
   private renderPluginView(
     view: { id: string; component: ComponentClassLike },
-    files: ReadonlyArray<any>
+    files: ReadonlyArray<any>,
+    viewSwitch: any
   ) {
     const View = view.component
 
@@ -147,6 +148,7 @@ export class ChangesFileViewSlot extends React.Component<
       <View
         files={files}
         availableWidth={this.props.availableWidth}
+        viewSwitch={<ChangesFileViewSwitch />}
         onSelectionChanged={this.props.onSelectionChanged}
         onFileContextMenu={this.props.onFileContextMenu}
         onIncludeChanged={this.props.onIncludeChanged}
