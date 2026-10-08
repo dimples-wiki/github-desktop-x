@@ -8,9 +8,12 @@ import { CommitList } from '../../ui/history/commit-list'
 import { TextBox } from '../../ui/lib/text-box'
 import { Select } from '../../ui/lib/select'
 import { Button } from '../../ui/lib/button'
+import { Checkbox, CheckboxValue } from '../../ui/lib/checkbox'
+import { DiffSelectionType } from '../../models/diff'
 import { Octicon } from '../../ui/octicons'
 import { defaultErrorHandler } from '../../ui/dispatcher'
 import {
+  getExtensionRegistrySizes,
   registerRepositorySection,
   registerChangesFileView,
 } from './extension-points'
@@ -27,6 +30,8 @@ function assembleExtensionApi() {
   return {
     /** Runtime platform flag (plugins must not rely on webpack globals). */
     isDarwin: process.platform === 'darwin',
+    CheckboxValue,
+    DiffSelectionType,
     React,
     classNames,
     octicons,
@@ -41,6 +46,7 @@ function assembleExtensionApi() {
       TextBox,
       Select,
       Button,
+      Checkbox,
       Octicon,
     },
   }
@@ -76,10 +82,17 @@ export function initializeExtensionLoader() {
     (_event, payload: { plugins: ReadonlyArray<{ id: string; code: string }> }) => {
       for (const plugin of payload.plugins ?? []) {
         try {
+          log.info(
+            `[extensions] installing ${plugin.id}; code head: ${JSON.stringify(
+              plugin.code.slice(0, 120)
+            )}`
+          )
           // The plugin bundle is an IIFE built against the API object.
           const run = new Function('__ghd', plugin.code)
           run(globalThis.__GHD_EXTENSION_API__)
-          log.info(`[extensions] loaded plugin: ${plugin.id}`)
+          log.info(
+            `[extensions] loaded plugin: ${plugin.id} (${getExtensionRegistrySizes()})`
+          )
         } catch (error) {
           log.error(`[extensions] failed to load plugin: ${plugin.id}`, error)
         }

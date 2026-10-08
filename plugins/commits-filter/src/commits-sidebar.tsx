@@ -3,9 +3,25 @@ import { React } from './ghd'
 /** Runtime platform flag (the host injects __DARWIN__ only at build time). */
 const __DARWIN__ = (globalThis as any).__GHD_EXTENSION_API__.isDarwin
 
-/** Tiny className joiner (avoids bundling classnames into the plugin). */
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
+/** Tiny className joiner (supports strings and {cls: bool} objects). */
+function cx(
+  ...parts: Array<string | false | null | undefined | Record<string, boolean | undefined>>
+): string {
+  const out: string[] = []
+  for (const part of parts) {
+    if (typeof part === 'string') {
+      out.push(part)
+    } else if (part && typeof part === 'object') {
+      for (const key of Object.keys(part)) {
+        if (part[key]) {
+          out.push(key)
+        }
+      }
+    } else if (part) {
+      out.push(String(part))
+    }
+  }
+  return out.join(' ')
 }
 import {
   EmptyCommitFilter,

@@ -152,3 +152,31 @@
 - `plugins/commits-filter/`：plugin.json + src（ghd 桥/纯逻辑/组件/注册）+ 18 个单测（构建时运行）
 - `plugins/changes-tree/`：plugin.json + src/index.tsx（树构建/折叠/状态色/选型联动）
 - `scripts/build-plugins.sh`（esbuild→IIFE）、`scripts/install-plugins.sh`
+
+
+---
+
+# 第六轮：回归修复 + List/Tree 手动切换（2026-10-08）
+
+针对「UI 一致性大退步」反馈的三项修复与实证：
+
+## 修复清单
+
+| 反馈 | 根因 | 修复 |
+|------|------|------|
+| commits 插件 UI 大退步（换行/贴字） | 动态插件的 CSS 没有随插件注入（`_commits-filter.scss` 留在宿主侧未 import） | 样式转为插件自有资产 `styles.ts`，注册时注入 `<style>`（同 changes-tree 模式）；布局实测 toggle+输入框同行（top 差 <2px） |
+| Tree 抢占默认视图、无切换 | 注册即替换、无开关 | 宿主插槽内置 **List/Tree 分段开关**（宿主组件渲染、原生 selected 样式），**默认 List**；注册插件后原列表仍为默认 |
+| 丢失 include 勾选/全选/数量 | 树形视图首版未实现 | 树视图补齐：tri-state **"N changed files" 全选头**（镜像原生 `.checkbox-container`）、**每文件 include 勾选**（联动宿主 commit 按钮 3→2 实证）、文件计数 |
+
+## 实证（GUI 自动化全过）
+
+1. tabs 三枚 ✓；2. 默认原生列表（含原生全选头）✓；3. List/Tree 开关 ✓；4. 树头部计数 ✓；5. 树 5 行 ✓；
+6. 勾选联动 commit 按钮 3→2 ✓；7. 一键切回原生列表 ✓；8. commits 插件布局断言（同行/无 [object Object]/间距）✓。
+截图：23-tree-with-checkboxes / 24-switch-back-to-list / 25-commits-style-regression-check。
+
+## 本轮踩坑（动态插件开发范式总结）
+
+- 插件 bundle 是 esbuild 产物：**顶层副作用必须真实存在**（只 export register() 无人调用会被摇树，犯了两次）；
+- esbuild 会为跨模块同名 const 重命名（api→api2），**append 到源码尾部的裸标识符引用会脱钩** → 尽量从 api 解构而非裸全局；
+- 插件 CSS 必须自带（宿主 SCSS 不覆盖动态插件）；
+- 插件引用宿主组件必须走 `api.components.*`（顶层没有的符号是 undefined）。

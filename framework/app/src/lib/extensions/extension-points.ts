@@ -174,6 +174,26 @@ export function getRegisteredChangesFileView(): IChangesFileViewExtension | unde
   return [...changesFileViewRegistry.values()][0]
 }
 
+/** The id of the built-in changes file view (the host's flat list). */
+export const BuiltInChangesFileViewId = 'builtin'
+
+let activeChangesFileViewId: string = BuiltInChangesFileViewId
+
+/** Selects which changes file view is displayed ('builtin' or a plugin id). */
+export function setActiveChangesFileView(id: string) {
+  if (activeChangesFileViewId === id) {
+    return
+  }
+
+  activeChangesFileViewId = id
+  notify(changesFileViewListeners)
+}
+
+/** The currently selected changes file view id. */
+export function getActiveChangesFileViewId(): string {
+  return activeChangesFileViewId
+}
+
 /** Subscribes to repository section registry changes. Returns unsubscribe. */
 export function subscribeRepositorySectionExtensions(
   listener: () => void
@@ -186,6 +206,11 @@ export function subscribeRepositorySectionExtensions(
 export function subscribeChangesFileView(listener: () => void): () => void {
   changesFileViewListeners.add(listener)
   return () => changesFileViewListeners.delete(listener)
+}
+
+/** Debug helper: current registry sizes (used by the plugin loader log). */
+export function getExtensionRegistrySizes(): string {
+  return `sections=${sectionRegistry.size} views=${changesFileViewRegistry.size}`
 }
 
 /** Test-only helper to reset the registries between test files. */

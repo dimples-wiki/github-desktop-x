@@ -403,6 +403,16 @@ EDITS = [
         "          <ChangesFileViewSlot\n"
         "            files={workingDirectory.files}\n"
         "            onSelectionChanged={this.onChangesFileViewSelectionChanged}\n"
+        "            onIncludeChanged={this.props.onIncludeChanged}\n"
+        "            includeAllValue={getCheckBoxValueFromIncludeAll(\n"
+        "              workingDirectory.includeAll\n"
+        "            )}\n"
+        "            onIncludeAllChanged={include =>\n"
+        "              this.props.onIncludeChanged(\n"
+        "                workingDirectory.files,\n"
+        "                include\n"
+        "              )\n"
+        "            }\n"
         "            fallback={\n"
         "          <AugmentedSectionFilterList<IChangesListItem>",
         1,

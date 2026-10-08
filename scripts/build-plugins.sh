@@ -39,6 +39,7 @@ for plugin_dir in "$PLUGINS"/*/; do
     --jsx-factory=React.createElement \
     --jsx-fragment=React.Fragment \
     --legal-comments=none \
+    --sourcemap=external \
     --outfile="$plugin_dir/renderer.js"
 
   # Optional tests: plugins/<name>/test/*.test.ts (node:test style)

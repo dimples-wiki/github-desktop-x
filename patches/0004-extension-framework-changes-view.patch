@@ -1,5 +1,5 @@
 diff --git a/app/src/ui/changes/filter-changes-list.tsx b/app/src/ui/changes/filter-changes-list.tsx
-index 11fad24..da355c0 100644
+index 11fad24..a5f4f63 100644
 --- a/app/src/ui/changes/filter-changes-list.tsx
 +++ b/app/src/ui/changes/filter-changes-list.tsx
 @@ -73,6 +73,8 @@ import {
@@ -28,7 +28,7 @@ index 11fad24..da355c0 100644
    private onFilesToCommitNotVisible = (onCommitAnyway: () => void) => {
      this.props.dispatcher.showPopup({
        type: PopupType.ConfirmCommitFilteredChanges,
-@@ -1332,56 +1344,62 @@ export class FilterChangesList extends React.Component<
+@@ -1332,56 +1344,69 @@ export class FilterChangesList extends React.Component<
      return (
        <>
          <div className="changes-list-container file-list filtered-changes-list">
@@ -40,7 +40,16 @@ index 11fad24..da355c0 100644
 -              this.props.showChangesFilter
 -                ? this.props.fileListFilter.filterText
 -                : ''
--            }
++          <ChangesFileViewSlot
++            files={workingDirectory.files}
++            onSelectionChanged={this.onChangesFileViewSelectionChanged}
++            onIncludeChanged={this.props.onIncludeChanged}
++            includeAllValue={getCheckBoxValueFromIncludeAll(
++              workingDirectory.includeAll
++            )}
++            onIncludeAllChanged={include =>
++              this.props.onIncludeChanged(workingDirectory.files, include)
+             }
 -            filterTextBox={this.filterTextBox}
 -            onFilterListResultsChanged={this.onFilterListResultsChanged}
 -            selectedItems={this.state.selectedItems}
@@ -63,9 +72,6 @@ index 11fad24..da355c0 100644
 -              this.props.fileListFilter.isExcludedFromCommit
 -                ? this.applyFilters
 -                : undefined
-+          <ChangesFileViewSlot
-+            files={workingDirectory.files}
-+            onSelectionChanged={this.onChangesFileViewSelectionChanged}
 +            fallback={
 +              <AugmentedSectionFilterList<IChangesListItem>
 +                ref={this.filterListRef}
