@@ -287,3 +287,32 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 - `.changes-tree .checkbox-container` 补充 `display: flex; align-items: center; padding: var(--spacing-half) 0;`
 - `.changes-tree .filter-box-container .changes-view-switch-icons { margin-left: auto }` 开关右对齐
 - 叶子行（ChangedFile）的高度（29px）与原生 changes 列表 RowHeight 一致
+
+
+---
+
+# 第十三轮：Tree 模式完整布局修复（2026-10-08 晚间终版）
+
+用户指出 include-all checkbox 位置与原生不一致且溢出到 diff 区域、状态徽标颜色不一致、Leaf 应只显 basename。逐项修复：
+
+| 问题 | 根因 | 修复 | 实测 |
+|------|------|------|------|
+| include-all 勾选框位置不对（溢出到 diff 区） | `.changes-tree-header-row` 用 flex **row** 把 filter-box 和 checkbox-container 排同一行 | 改 `flex-direction: column`：filter 行在上、include-all 独立行在下 | ✓ cbBelowFilter=true |
+| 状态着色不生效（深灰而非绿/黄） | `.list-focus-container` 不在 `.file-list` 后代链内（两类放同一元素） | 拆为嵌套：`.file-list > .list-focus-container > .changes-tree` | ✓ fill = rgb(34,134,58) 绿 |
+| 分割线不见 | 同上（`.list-item` 缺 `.file-list` 祖先） | 同上嵌套 | ✓ border-bottom = 1px |
+| Leaf 显示完整路径 | 传了完整 path | ChangedFile 传 basename（`{ ...file, path: row.name }`），include 回调转发原始对象 | ✓ 叶子只显文件名 |
+| Tree 行高异常（258px 溢出） | `.file` 的 `height: 100%` 在无固定高父级内回退异常 | `.changes-tree-row` 固定 `height: 29px`（= 原生 changes 列表 RowHeight） | ✓ 全部行 29px |
+
+截图：41（展开态树 3 层级 + 勾选/徽标/分割线/计数）、42（include 勾选联动 Commit 3→2）、43（切回 List）、44（Commits 回归）、45（History 回归）。
+
+## 最终验收清单
+
+| 维度 | 结果 |
+|------|------|
+| Commits 筛选（author/message/desc/date） | ✅ R5 C1–C5 全过 |
+| Popover 交互（开合/点外/徽标/间距） | ✅ R5 C3–C4 |
+| List/Tree 切换 + 树过滤/勾选/全选/右键 | ✅ R5 C6 + F6 |
+| Commits 列表 + History 回归 | ✅ R5 C1/C7 |
+| 滚动稳定性 + 反复切换 | ✅ R5 C9–C10 |
+| Tree 行结构/着色/分割线 | ✅ UI 盲审 G1–G2 |
+| 气泡布局 + 原生日期控件 | ✅ UI 盲审 G5 |
