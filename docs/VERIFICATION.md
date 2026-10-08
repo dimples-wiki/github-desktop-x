@@ -327,3 +327,21 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 - include-all checkbox 行位于 filter 行下方独立一行
 
 实测：statusFill=rgb(34,134,58) 绿色 ✓、rowBorder=1px ✓、includeAll 位置 ✓、树勾选联动 Commit 3→2 ✓
+
+
+## 第十四轮：Tree 模式布局与着色全部修复（2026-10-08 深夜终版）
+
+所有用户指出的问题已修复并截图实证：
+
+| 问题 | 修复 | 截图 |
+|------|------|------|
+| include-all 勾选框溢出到 diff 区 | header-row 改 column 布局，include-all 行独立在下方 | 48 |
+| 状态徽标颜色深灰（不着色） | 树容器补 `.list-focus-container` 类，宿主 octicon-status mixin 自动生效 | 41（绿 ✓） |
+| 叶子显示完整路径 | ChangedFile 收 basename | 47（demo.js only） |
+| 分割线不见 | 同上（`.list-item` 的 border-bottom 由宿主 `.file-list` 规则提供） | 41（1px 分割线 ✓） |
+| caret 方向反 | className 动态化（折叠=右箭头、展开=下箭头） | 41（▸ src ▾ plugins ✓） |
+| 弹窗表单项没间距 | CSS 类名对齐 + gap | 39（间距均匀 ✓） |
+| 日期手输蠢 | 原生 `<input type="date">` 日历控件 | 39（原生日期 ✓） |
+| 切换图标不对/激活态多余 | 单图标=当前视图（listUnordered ⇄ list-tree SVG） | 30/41 ✓ |
+| 行高不一致（树 258px 溢出） | 29px 固定行高（=原生 changes 列表行高） | 41 ✓ |
+| 关闭按钮丑 | 复刻宿主 close-button mixin | 39 ✓ |
