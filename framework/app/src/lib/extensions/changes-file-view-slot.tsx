@@ -21,6 +21,9 @@ interface IChangesFileViewSlotProps {
   /** Notify the host that the user selected these files (diff follows). */
   readonly onSelectionChanged: (files: ReadonlyArray<any>) => void
 
+  /** Host context menu for a changed file (right click). */
+  readonly onFileContextMenu: (file: any, event: any) => void
+
   /** Host callback toggling a file's (or a set of files') inclusion. */
   readonly onIncludeChanged: (
     file: any | ReadonlyArray<any>,
@@ -145,6 +148,7 @@ export class ChangesFileViewSlot extends React.Component<
         files={files}
         availableWidth={this.props.availableWidth}
         onSelectionChanged={this.props.onSelectionChanged}
+        onFileContextMenu={this.props.onFileContextMenu}
         onIncludeChanged={this.props.onIncludeChanged}
         includeAllValue={this.props.includeAllValue}
         onIncludeAllChanged={this.props.onIncludeAllChanged}

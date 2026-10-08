@@ -160,7 +160,9 @@ export class ChangesTreeView extends React.Component<any, any> {
     flattenTree(tree, this.state.collapsedFolders, 0, rows)
 
     return (
-      <div className="changes-tree file-list">
+      <div className="file-list">
+        <div className="list-focus-container changes-tree-focus">
+          <div className="changes-tree">
         {styleInjection()}
         {this.renderHeaderRow()}
 
@@ -173,7 +175,7 @@ export class ChangesTreeView extends React.Component<any, any> {
           return (
             <div
               key={row.path}
-              className={`changes-tree-row${include ? ' included' : ''}`}
+              className={`changes-tree-row list-item${include ? ' included' : ''}`}
               style={{ paddingLeft: 8 + row.depth * 14 }}
               onClick={() => {
                 if (isFolder) {
@@ -182,6 +184,14 @@ export class ChangesTreeView extends React.Component<any, any> {
                   this.props.onSelectionChanged([row.file])
                 }
               }}
+              onContextMenu={
+                isFolder
+                  ? undefined
+                  : (event: any) => {
+                      event.preventDefault()
+                      this.props.onFileContextMenu(row.file, event)
+                    }
+              }
               title={row.path}
             >
               {isFolder ? (
@@ -217,6 +227,8 @@ export class ChangesTreeView extends React.Component<any, any> {
           )
         })}
       </div>
+        </div>
+      </div>
     )
   }
 }
@@ -242,6 +254,12 @@ function TreeCaret(props: { expanded: boolean }) {
 }
 
 const treeCss = `
+.changes-tree-focus {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .changes-tree-header {
   padding: var(--spacing-half) var(--spacing);
   border-bottom: var(--base-border);

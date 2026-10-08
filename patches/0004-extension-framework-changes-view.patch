@@ -1,5 +1,5 @@
 diff --git a/app/src/ui/changes/filter-changes-list.tsx b/app/src/ui/changes/filter-changes-list.tsx
-index 11fad24..e295e3d 100644
+index 11fad24..f902a6c 100644
 --- a/app/src/ui/changes/filter-changes-list.tsx
 +++ b/app/src/ui/changes/filter-changes-list.tsx
 @@ -73,6 +73,9 @@ import {
@@ -12,10 +12,28 @@ index 11fad24..e295e3d 100644
  import { HookProgress } from '../../lib/git'
  import { formatNumber } from '../../lib/format-number'
  
-@@ -1192,6 +1195,16 @@ export class FilterChangesList extends React.Component<
+@@ -1192,6 +1195,34 @@ export class FilterChangesList extends React.Component<
      this.props.onFileSelectionChanged(rows)
    }
  
++  /** Context menu bridge for the plugin-provided changes file view. */
++  private onChangesFileViewContextMenu = (
++    file: WorkingDirectoryFileChange,
++    event: React.MouseEvent<HTMLDivElement>
++  ) => {
++    if (this.props.isCommitting) {
++      return
++    }
++
++    event.preventDefault()
++    const items =
++      this.props.rebaseConflictState === null
++        ? this.getDefaultContextMenu(file)
++        : this.getRebaseContextMenu(file)
++
++    showContextualMenu(items)
++  }
++
 +  /** Selection bridge for the plugin-provided changes file view. */
 +  private onChangesFileViewSelectionChanged = (
 +    files: ReadonlyArray<FileChange>
@@ -29,7 +47,7 @@ index 11fad24..e295e3d 100644
    private onFilesToCommitNotVisible = (onCommitAnyway: () => void) => {
      this.props.dispatcher.showPopup({
        type: PopupType.ConfirmCommitFilteredChanges,
-@@ -1309,6 +1322,8 @@ export class FilterChangesList extends React.Component<
+@@ -1309,6 +1340,8 @@ export class FilterChangesList extends React.Component<
            onKeyDown={this.onFilterKeyDown}
            value={this.props.fileListFilter.filterText}
          />
@@ -38,7 +56,7 @@ index 11fad24..e295e3d 100644
        </div>
      )
    }
-@@ -1332,56 +1347,70 @@ export class FilterChangesList extends React.Component<
+@@ -1332,56 +1365,71 @@ export class FilterChangesList extends React.Component<
      return (
        <>
          <div className="changes-list-container file-list filtered-changes-list">
@@ -83,6 +101,7 @@ index 11fad24..e295e3d 100644
 -                ? this.applyFilters
 -                : undefined
 +            availableWidth={this.props.availableWidth}
++            onFileContextMenu={this.onChangesFileViewContextMenu}
 +            fallback={
 +              <AugmentedSectionFilterList<IChangesListItem>
 +                ref={this.filterListRef}

@@ -104,14 +104,14 @@
       const tree = buildTree(files);
       const rows = [];
       flattenTree(tree, this.state.collapsedFolders, 0, rows);
-      return /* @__PURE__ */ React.createElement("div", { className: "changes-tree file-list" }, styleInjection(), this.renderHeaderRow(), rows.map((row) => {
+      return /* @__PURE__ */ React.createElement("div", { className: "file-list" }, /* @__PURE__ */ React.createElement("div", { className: "list-focus-container changes-tree-focus" }, /* @__PURE__ */ React.createElement("div", { className: "changes-tree" }, styleInjection(), this.renderHeaderRow(), rows.map((row) => {
         const isFolder = row.file === void 0;
         const include = !isFolder && row.file.selection.getSelectionType() === DiffSelectionType.All;
         return /* @__PURE__ */ React.createElement(
           "div",
           {
             key: row.path,
-            className: `changes-tree-row${include ? " included" : ""}`,
+            className: `changes-tree-row list-item${include ? " included" : ""}`,
             style: { paddingLeft: 8 + row.depth * 14 },
             onClick: () => {
               if (isFolder) {
@@ -119,6 +119,10 @@
               } else {
                 this.props.onSelectionChanged([row.file]);
               }
+            },
+            onContextMenu: isFolder ? void 0 : (event) => {
+              event.preventDefault();
+              this.props.onFileContextMenu(row.file, event);
             },
             title: row.path
           },
@@ -144,7 +148,7 @@
           ),
           isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
         );
-      }));
+      }))));
     }
   };
   function TreeCaret(props) {
@@ -163,6 +167,12 @@
     );
   }
   var treeCss = `
+.changes-tree-focus {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .changes-tree-header {
   padding: var(--spacing-half) var(--spacing);
   border-bottom: var(--base-border);
