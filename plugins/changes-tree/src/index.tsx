@@ -123,9 +123,31 @@ function matchesStatusFilters(file: any, filters: IStatusFilters): boolean {
 const treeCss = `
 .changes-tree-header-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   padding: var(--spacing-half);
   border-bottom: var(--base-border);
+}
+
+.changes-tree-header-row .filter-box-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+}
+
+.changes-tree-header-row .filter-box-container .filter-button {
+  flex: initial;
+}
+
+.changes-tree-header-row .filter-box-container .commits-filter-field,
+.changes-tree-header-row .filter-box-container .filter-list-filter-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.changes-tree-header-row .checkbox-container {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-half) 0 0;
 }
 
 .changes-tree .filter-box-container {
