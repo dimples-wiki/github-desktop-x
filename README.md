@@ -53,6 +53,13 @@ yarn test:unit app/test/unit/commits-filter-logic-test.ts
   ```
 - **测试夹具**：`./scripts/make-fixture-repo.sh`（34 提交 / 4 作者 / 多行正文 / 特性分支）。
 
+## 本机安装状态（2026-10-08）
+
+二开版已打包并安装：**/Applications/GitHub Desktop Dimple.app**（678MB，ad-hoc 签名）。
+- 首次启动走官方首启流程（欢迎页 → 本地仓库），`--cli-open` 的 demo 仓库已加入
+- 两个动态插件已预装：`~/Library/Application Support/GitHub Desktop Dimple/plugins/`（commits-filter + changes-tree）
+- 与官方版可共存；删除应用即卸载，插件目录一并删除即完全清理
+
 ## 文档
 
 - [docs/PLAN.md](docs/PLAN.md) — 架构方案、插入点、验收标准

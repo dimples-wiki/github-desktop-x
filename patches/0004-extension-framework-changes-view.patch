@@ -1,5 +1,5 @@
 diff --git a/app/src/ui/changes/filter-changes-list.tsx b/app/src/ui/changes/filter-changes-list.tsx
-index 11fad24..978dc6c 100644
+index 11fad24..e91f44f 100644
 --- a/app/src/ui/changes/filter-changes-list.tsx
 +++ b/app/src/ui/changes/filter-changes-list.tsx
 @@ -73,6 +73,9 @@ import {
@@ -33,23 +33,15 @@ index 11fad24..978dc6c 100644
            onKeyDown={this.onFilterKeyDown}
            value={this.props.fileListFilter.filterText}
          />
-+        {/* List/Tree icon switch for plugin-provided file views */}
-+        <ChangesFileViewSwitch />
++          {/* List/Tree icon switch for plugin-provided file views */}
++          <ChangesFileViewSwitch />
        </div>
      )
    }
-@@ -1332,56 +1347,69 @@ export class FilterChangesList extends React.Component<
+@@ -1332,6 +1347,20 @@ export class FilterChangesList extends React.Component<
      return (
        <>
          <div className="changes-list-container file-list filtered-changes-list">
--          <AugmentedSectionFilterList<IChangesListItem>
--            ref={this.filterListRef}
--            id="changes-list"
--            rowHeight={RowHeight}
--            filterText={
--              this.props.showChangesFilter
--                ? this.props.fileListFilter.filterText
--                : ''
 +          <ChangesFileViewSlot
 +            files={workingDirectory.files}
 +            onSelectionChanged={this.onChangesFileViewSelectionChanged}
@@ -58,101 +50,23 @@ index 11fad24..978dc6c 100644
 +              workingDirectory.includeAll
 +            )}
 +            onIncludeAllChanged={include =>
-+              this.props.onIncludeChanged(workingDirectory.files, include)
-             }
--            filterTextBox={this.filterTextBox}
--            onFilterListResultsChanged={this.onFilterListResultsChanged}
--            selectedItems={this.state.selectedItems}
--            selectionMode="multi"
--            renderItem={this.renderChangedFile}
--            onItemClick={this.onChangedFileClick}
--            onItemDoubleClick={this.onChangedFileDoubleClick}
--            onItemKeyboardFocus={this.onChangedFileFocus}
--            onItemBlur={this.onChangedFileBlur}
--            onScroll={this.onScroll}
--            setScrollTop={this.props.changesListScrollTop}
--            onItemKeyDown={this.onItemKeyDown}
--            onSelectionChanged={this.onFileSelectionChanged}
--            groups={this.state.groups}
--            filterMethod={
--              this.props.fileListFilter.isIncludedInCommit ||
--              this.props.fileListFilter.isNewFile ||
--              this.props.fileListFilter.isModifiedFile ||
--              this.props.fileListFilter.isDeletedFile ||
--              this.props.fileListFilter.isExcludedFromCommit
--                ? this.applyFilters
--                : undefined
++              this.props.onIncludeChanged(
++                workingDirectory.files,
++                include
++              )
++            }
 +            fallback={
-+              <AugmentedSectionFilterList<IChangesListItem>
-+                ref={this.filterListRef}
-+                id="changes-list"
-+                rowHeight={RowHeight}
-+                filterText={
-+                  this.props.showChangesFilter
-+                    ? this.props.fileListFilter.filterText
-+                    : ''
-+                }
-+                filterTextBox={this.filterTextBox}
-+                onFilterListResultsChanged={this.onFilterListResultsChanged}
-+                selectedItems={this.state.selectedItems}
-+                selectionMode="multi"
-+                renderItem={this.renderChangedFile}
-+                onItemClick={this.onChangedFileClick}
-+                onItemDoubleClick={this.onChangedFileDoubleClick}
-+                onItemKeyboardFocus={this.onChangedFileFocus}
-+                onItemBlur={this.onChangedFileBlur}
-+                onScroll={this.onScroll}
-+                setScrollTop={this.props.changesListScrollTop}
-+                onItemKeyDown={this.onItemKeyDown}
-+                onSelectionChanged={this.onFileSelectionChanged}
-+                groups={this.state.groups}
-+                filterMethod={
-+                  this.props.fileListFilter.isIncludedInCommit ||
-+                  this.props.fileListFilter.isNewFile ||
-+                  this.props.fileListFilter.isModifiedFile ||
-+                  this.props.fileListFilter.isDeletedFile ||
-+                  this.props.fileListFilter.isExcludedFromCommit
-+                    ? this.applyFilters
-+                    : undefined
-+                }
-+                invalidationProps={{
-+                  workingDirectory: workingDirectory,
-+                  isCommitting: isCommitting,
-+                  focusedRow: this.state.focusedRow,
-+                  showChangesFilter: this.props.showChangesFilter,
-+                  filterNewFiles: this.props.fileListFilter.isNewFile,
-+                  filterModifiedFiles: this.props.fileListFilter.isModifiedFile,
-+                  filterDeletedFiles: this.props.fileListFilter.isDeletedFile,
-+                  filterExcludedFiles:
-+                    this.props.fileListFilter.isExcludedFromCommit,
-+                }}
-+                onItemContextMenu={this.onItemContextMenu}
-+                renderCustomFilterRow={this.renderFilterRow}
-+                getGroupAriaLabel={this.getListAriaLabel}
-+                renderNoItems={this.renderNoChanges}
-+                postNoResultsMessage={getNoResultsMessage(
-+                  this.props.fileListFilter
-+                )}
-+              />
-             }
--            invalidationProps={{
--              workingDirectory: workingDirectory,
--              isCommitting: isCommitting,
--              focusedRow: this.state.focusedRow,
--              showChangesFilter: this.props.showChangesFilter,
--              filterNewFiles: this.props.fileListFilter.isNewFile,
--              filterModifiedFiles: this.props.fileListFilter.isModifiedFile,
--              filterDeletedFiles: this.props.fileListFilter.isDeletedFile,
--              filterExcludedFiles:
--                this.props.fileListFilter.isExcludedFromCommit,
--            }}
--            onItemContextMenu={this.onItemContextMenu}
--            renderCustomFilterRow={this.renderFilterRow}
--            getGroupAriaLabel={this.getListAriaLabel}
--            renderNoItems={this.renderNoChanges}
--            postNoResultsMessage={getNoResultsMessage(
--              this.props.fileListFilter
--            )}
-           />
+           <AugmentedSectionFilterList<IChangesListItem>
+             ref={this.filterListRef}
+             id="changes-list"
+@@ -1382,7 +1411,9 @@ export class FilterChangesList extends React.Component<
+             postNoResultsMessage={getNoResultsMessage(
+               this.props.fileListFilter
+             )}
+-          />
++            />
++          }
++        />
          </div>
          {this.renderStashedChanges()}
+         {this.renderHiddenChangesWarning()}
