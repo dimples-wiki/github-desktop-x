@@ -1,5 +1,5 @@
 diff --git a/app/src/main-process/menu/build-default-menu.ts b/app/src/main-process/menu/build-default-menu.ts
-index cd5c20c..b2a6b1c 100644
+index cd5c20c..2d826f1 100644
 --- a/app/src/main-process/menu/build-default-menu.ts
 +++ b/app/src/main-process/menu/build-default-menu.ts
 @@ -9,6 +9,7 @@ import { MenuLabelsEvent } from '../../models/menu-labels'
@@ -10,16 +10,14 @@ index cd5c20c..b2a6b1c 100644
  
  const createPullRequestLabel = __DARWIN__
    ? 'Create Pull Request'
-@@ -191,6 +192,16 @@ export function buildDefaultMenuTemplate({
+@@ -191,6 +192,14 @@ export function buildDefaultMenuTemplate({
          accelerator: 'CmdOrCtrl+2',
          click: emit('show-history'),
        },
 +      // Menu items contributed by repository section extensions
 +      // (see lib/extensions).
 +      ...getExtensionMenuItems().map(item => ({
-+        label: __DARWIN__
-+          ? item.label
-+          : item.label.replace('Show ', 'Show &'),
++        label: __DARWIN__ ? item.label : item.label.replace('Show ', 'Show &'),
 +        id: item.id,
 +        accelerator: item.accelerator,
 +        click: emit(item.id as MenuEvent),

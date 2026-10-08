@@ -65,15 +65,15 @@ export class ChangesFileViewSwitch extends React.Component<
             isListActive
               ? `View as ${view.title}`
               : __DARWIN__
-                ? 'View as List'
-                : 'View as list'
+              ? 'View as List'
+              : 'View as list'
           }
           aria-label={
             isListActive
               ? `View as ${view.title}`
               : __DARWIN__
-                ? 'View as List'
-                : 'View as list'
+              ? 'View as List'
+              : 'View as list'
           }
           onClick={() =>
             setActiveChangesFileView(

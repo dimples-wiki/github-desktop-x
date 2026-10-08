@@ -89,7 +89,10 @@ export function initializeExtensionLoader() {
 
   ipcRenderer.on(
     InstallChannel,
-    (_event, payload: { plugins: ReadonlyArray<{ id: string; code: string }> }) => {
+    (
+      _event,
+      payload: { plugins: ReadonlyArray<{ id: string; code: string }> }
+    ) => {
       for (const plugin of payload.plugins ?? []) {
         try {
           log.info(
@@ -101,7 +104,9 @@ export function initializeExtensionLoader() {
           const run = new Function('__ghd', plugin.code)
           run(globalThis.__GHD_EXTENSION_API__)
           log.info(
-            `[extensions] loaded plugin: ${plugin.id} (${getExtensionRegistrySizes()})`
+            `[extensions] loaded plugin: ${
+              plugin.id
+            } (${getExtensionRegistrySizes()})`
           )
         } catch (error) {
           log.error(`[extensions] failed to load plugin: ${plugin.id}`, error)

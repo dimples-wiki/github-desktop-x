@@ -101,7 +101,9 @@ function notify(listeners: Set<() => void>) {
  * Extensions are loaded at runtime (see plugin-loader); the tab bar
  * re-renders automatically through the registry subscription.
  */
-export function registerRepositorySection(extension: IRepositorySectionExtension) {
+export function registerRepositorySection(
+  extension: IRepositorySectionExtension
+) {
   if (sectionRegistry.has(extension.id)) {
     throw new Error(
       `Repository section extension '${extension.id}' is already registered`
@@ -137,9 +139,7 @@ export function getSectionForExtension(
 }
 
 /** Inverse of `getSectionForExtension` for a zero-based tab index. */
-export function sectionForExtensionIndex(
-  index: number
-): RepositorySectionTab {
+export function sectionForExtensionIndex(index: number): RepositorySectionTab {
   return RepositorySectionTab.ExtensionStart + index
 }
 
@@ -170,7 +170,9 @@ export function getTabIdForExtension(
 }
 
 /** The registered changes file view, if a plugin provided one. */
-export function getRegisteredChangesFileView(): IChangesFileViewExtension | undefined {
+export function getRegisteredChangesFileView():
+  | IChangesFileViewExtension
+  | undefined {
   return [...changesFileViewRegistry.values()][0]
 }
 

@@ -70,11 +70,9 @@ export class ChangesFileViewSlot extends React.Component<
 
   public componentWillMount() {
     this.unsubscribe = subscribeChangesFileView(() => {
-      this.setState(
-        (prevState: { version: number }) => ({
-          version: prevState.version + 1,
-        })
-      )
+      this.setState((prevState: { version: number }) => ({
+        version: prevState.version + 1,
+      }))
     })
   }
 
