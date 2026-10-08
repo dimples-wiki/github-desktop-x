@@ -62,3 +62,4 @@
 - 2026-10-08 安装交付：应用打包并安装至 **/Applications/GitHub Desktop Dimple.app**（ad-hoc 签名校验通过、678MB）；两个动态插件预装至默认 userData；从安装位置启动实测：Commits tab 动态出现、筛选计数 34、Popover 4 字段、Changes 树形开关就位（截图 34）。本机确认未安装官方 GitHub Desktop（/Applications 与 Spotlight 均无），无共存冲突。
 - 2026-10-08 Tree 行原生复用：changes-tree 叶子行改用宿主 `ChangedFile` 组件（勾选框/文件名/**右缘状态徽标**全原生回归，不再是自绘样子）；caret className 动态化修复"方向反了"；List/Tree 改**单图标切换**（图标=当前视图：List 显 listUnordered、Tree 显自绘 list-tree 树形图标，无激活态）。修复过程中暴露的动态插件三坑（均已记录）：①heredoc 重写覆盖了底部注册调用；②`included` 未定义引用（include 变量改名后 className 模板未同步）即渲染崩溃；③单实例锁——自动化前必须 pkill 旧实例。
 - 2026-10-08 安装版复验：/Applications 版启动三 tab 齐全、Commits 列表 14 行正常渲染、插件开关就位（截图 43）。
+- 2026-10-08 晚：Tree 模式 include-all 与 filter 行堆叠修复（header-row 改 column 布局 + .checkbox-container 居中样式）；单图标切换锚点统一（两种模式均在行尾）；安装版重打包。

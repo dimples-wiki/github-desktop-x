@@ -530,7 +530,9 @@ export class ChangesTreeView extends React.Component<any, any> {
     const activeCount = Object.values(statusFilters).filter(Boolean).length
 
     return (
-      <div className="changes-tree file-list">
+      <div className="file-list">
+        <div className="list-focus-container">
+      <div className="changes-tree">
         {styleInjection()}
 
         <div className="changes-tree-header-row">
@@ -645,6 +647,8 @@ export class ChangesTreeView extends React.Component<any, any> {
           )
         })}
       </div>
+        </div>
+      </div>
     )
   }
 }
@@ -657,3 +661,32 @@ export class ChangesTreeView extends React.Component<any, any> {
   title: 'Tree',
   component: ChangesTreeView,
 })
+
+.commits-commit-list .commits-filter-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-half);
+  padding: var(--spacing);
+  max-width: 260px;
+}
+
+.commits-commit-list .commits-filter-empty .octicon {
+  width: 32px; height: 32px;
+  fill: var(--text-secondary-color); opacity: 0.6;
+}
+
+.commits-commit-list .commits-filter-empty h2 {
+  margin: 0; font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold); color: var(--text-color);
+}
+
+.commits-commit-list .commits-filter-empty p {
+  margin: 0; color: var(--text-secondary-color);
+  font-size: var(--font-size-sm);
+}
+
+.commits-commit-list .commits-filter-empty .commits-filter-empty-action {
+  margin-top: var(--spacing-half);
+}

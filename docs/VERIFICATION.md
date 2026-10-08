@@ -277,3 +277,13 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 - Tree 模式自带完整 filter 行（复刻 `.filter-box-container`：状态筛选漏斗按钮+气泡+文本框+视图开关）
 - List/Tree 单图标切换（图标=当前视图：List=listUnordered、Tree=自绘 list-tree 树形符号）
 - 12 项断言复验全过；树过滤（readme→1 行）实证；截图 41/46
+
+
+## 第十二轮：Tree 模式布局修复（2026-10-08 晚）
+
+用户指出 Tree 模式下 include-all 与 filter 行挤在同一行。修复：
+
+- `.changes-tree-header-row` 改为 column 布局（filter 行在上、include-all 行在下）
+- `.changes-tree .checkbox-container` 补充 `display: flex; align-items: center; padding: var(--spacing-half) 0;`
+- `.changes-tree .filter-box-container .changes-view-switch-icons { margin-left: auto }` 开关右对齐
+- 叶子行（ChangedFile）的高度（29px）与原生 changes 列表 RowHeight 一致

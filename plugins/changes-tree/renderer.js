@@ -416,7 +416,7 @@
       flattenTree(tree, this.state.collapsedFolders, 0, rows);
       const counts = countStatuses(files);
       const activeCount = Object.values(statusFilters).filter(Boolean).length;
-      return /* @__PURE__ */ React.createElement("div", { className: "changes-tree file-list" }, styleInjection(), /* @__PURE__ */ React.createElement("div", { className: "changes-tree-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "filter-box-container" }, /* @__PURE__ */ React.createElement(
+      return /* @__PURE__ */ React.createElement("div", { className: "file-list" }, /* @__PURE__ */ React.createElement("div", { className: "list-focus-container" }, /* @__PURE__ */ React.createElement("div", { className: "changes-tree" }, styleInjection(), /* @__PURE__ */ React.createElement("div", { className: "changes-tree-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "filter-box-container" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           className: `button-component filter-button${activeCount > 0 ? " active" : ""}`,
@@ -489,7 +489,7 @@
           ),
           isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
         );
-      }));
+      }))));
     }
   };
   globalThis.__GHD_EXTENSION_API__.registerChangesFileView({
