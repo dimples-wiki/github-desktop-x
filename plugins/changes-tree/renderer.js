@@ -78,9 +78,31 @@
   var treeCss = `
 .changes-tree-header-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   padding: var(--spacing-half);
   border-bottom: var(--base-border);
+}
+
+.changes-tree-header-row .filter-box-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+}
+
+.changes-tree-header-row .filter-box-container .filter-button {
+  flex: initial;
+}
+
+.changes-tree-header-row .filter-box-container .commits-filter-field,
+.changes-tree-header-row .filter-box-container .filter-list-filter-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.changes-tree-header-row .checkbox-container {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-half) 0 0;
 }
 
 .changes-tree .filter-box-container {
@@ -245,6 +267,31 @@
 
 .commits-tree-filter-popover .button-component {
   min-width: 60px;
+}
+
+.commits-commit-list .commits-filter-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: var(--spacing-half);
+  padding: var(--spacing); max-width: 260px;
+}
+
+.commits-commit-list .commits-filter-empty .commits-filter-empty-icon.octicon {
+  width: 32px; height: 32px;
+  fill: var(--text-secondary-color); opacity: 0.6;
+}
+
+.commits-commit-list .commits-filter-empty h2 {
+  margin: 0; font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold); color: var(--text-color);
+}
+
+.commits-commit-list .commits-filter-empty p {
+  margin: 0; color: var(--text-secondary-color);
+  font-size: var(--font-size-sm);
+}
+
+.commits-commit-list .commits-filter-empty .commits-filter-empty-action {
+  margin-top: var(--spacing-half);
 }
 `;
   function styleInjection() {

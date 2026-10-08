@@ -316,3 +316,14 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 | 滚动稳定性 + 反复切换 | ✅ R5 C9–C10 |
 | Tree 行结构/着色/分割线 | ✅ UI 盲审 G1–G2 |
 | 气泡布局 + 原生日期控件 | ✅ UI 盲审 G5 |
+
+
+## 第十三轮补验：Tree 模式 include-all 行归位 + 状态着色修复（同日晚间）
+
+用户截图实证 include-all 勾选框溢出到 diff 区。根因：树容器 className 缺 `.list-focus-container`（宿主着色/分割线规则的作用域链）且 header-row 未按 column 堆叠。修复：
+
+- 树容器嵌套 `file-list > list-focus-container > changes-tree` → 宿主 `octicon-status` mixin 与 `.list-item` border-bottom 规则自动生效
+- `.changes-tree-row` 加 29px 固定行高（与原生 changes 列表 RowHeight 一致）
+- include-all checkbox 行位于 filter 行下方独立一行
+
+实测：statusFill=rgb(34,134,58) 绿色 ✓、rowBorder=1px ✓、includeAll 位置 ✓、树勾选联动 Commit 3→2 ✓
