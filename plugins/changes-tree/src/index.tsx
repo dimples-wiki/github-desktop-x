@@ -1,4 +1,4 @@
-import * as React from './ghd'
+import { React } from './ghd'
 import {
   Popover,
   PopoverAnchorPosition,
@@ -119,6 +119,179 @@ function matchesStatusFilters(file: any, filters: IStatusFilters): boolean {
 
   return true
 }
+
+const treeCss = `
+.changes-tree-header-row {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-half);
+  border-bottom: var(--base-border);
+}
+
+.changes-tree .filter-box-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.changes-tree .filter-box-container input {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.changes-tree .filter-button {
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+  border-right: none;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.changes-tree .filter-button.active span:first-child {
+  color: var(--box-selected-active-background-color);
+}
+
+.changes-tree .filter-button .active-badge {
+  position: absolute;
+  right: 18px;
+  top: 4px;
+}
+
+.changes-tree .filter-button .active-badge .badge-bg {
+  padding: 1px;
+  border-radius: 50%;
+  background-color: var(--secondary-button-background);
+}
+
+.changes-tree .filter-button .active-badge .badge {
+  width: 5px;
+  height: 5px;
+  background-color: var(--box-selected-active-background-color);
+  border-radius: 50%;
+}
+
+.changes-tree-header {
+  padding: var(--spacing-half) var(--spacing);
+  border-bottom: var(--base-border);
+}
+
+.changes-tree-header .checkbox-component {
+  display: flex;
+}
+
+.changes-tree {
+  flex: 1;
+  overflow-y: auto;
+  user-select: none;
+}
+
+.changes-tree-row {
+  display: flex;
+  align-items: center;
+  height: 29px;
+  padding-right: var(--spacing, 8px);
+  cursor: default;
+}
+
+.changes-tree-row:hover {
+  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.04));
+}
+
+.changes-tree-row .tree-caret {
+  width: 16px;
+  height: 16px;
+  flex: initial;
+  margin-right: 2px;
+  fill: var(--text-secondary-color);
+}
+
+.changes-tree-row .tree-indent {
+  width: 10px;
+  flex: initial;
+}
+
+.changes-tree-row .tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size, 12px);
+  color: var(--text-secondary-color);
+}
+
+.changes-tree-row .tree-count {
+  margin-left: auto;
+  color: var(--text-secondary-color);
+  font-size: var(--font-size-sm, 11px);
+}
+
+.changes-view-slot .filter-box-container input {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.commits-tree-filter-popover {
+  text-align: left;
+  min-width: 240px;
+}
+
+.commits-tree-filter-popover .popover-content {
+  padding: var(--spacing);
+}
+
+.commits-tree-filter-popover .filter-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing);
+}
+
+.commits-tree-filter-popover .filter-popover-header h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.commits-tree-filter-popover .close {
+  flex-shrink: 0;
+  border: 0;
+  height: 16px;
+  width: 16px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-secondary-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.commits-tree-filter-popover .close .octicon {
+  pointer-events: none;
+}
+
+.commits-tree-filter-popover .close:hover {
+  color: var(--text-color);
+}
+
+.commits-tree-filter-popover .filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-half);
+  margin: 0;
+}
+
+.commits-tree-filter-popover .filter-options-footer {
+  border-top: var(--base-border);
+  padding-top: var(--spacing-half);
+  margin-top: var(--spacing-half);
+  text-align: left;
+}
+
+.commits-tree-filter-popover .button-component {
+  min-width: 60px;
+}
+`
 
 function styleInjection() {
   return <style>{treeCss}</style>
@@ -333,7 +506,7 @@ export class ChangesTreeView extends React.Component<any, any> {
   }
 
   public render() {
-    const { files, availableWidth } = this.props
+    const { files, availableWidth, includeAllValue, onIncludeAllChanged } = this.props
     const filterText = this.state.filterText.trim().toLowerCase()
     const statusFilters: IStatusFilters = this.state.statusFilters
     const statusActive = Object.values(statusFilters).some(Boolean)
@@ -473,3 +646,12 @@ export class ChangesTreeView extends React.Component<any, any> {
     )
   }
 }
+
+// Registered after the component declaration (class declarations are not
+// hoisted). While registered, the tree view is available via the icon
+// switch; the built-in list remains the default.
+;(globalThis as any).__GHD_EXTENSION_API__.registerChangesFileView({
+  id: 'changes-tree',
+  title: 'Tree',
+  component: ChangesTreeView,
+})

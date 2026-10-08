@@ -1,6 +1,5 @@
 import * as React from 'react'
 
-import { TextBox } from '../../ui/lib/text-box'
 import { ChangesFileViewSwitch } from './changes-file-view-switch'
 import {
   getActiveChangesFileViewId,
@@ -86,10 +85,6 @@ export class ChangesFileViewSlot extends React.Component<
     }
   }
 
-  private onFilterTextChanged = (value: string) => {
-    this.setState({ filterText: value })
-  }
-
   public render() {
     const view = getRegisteredChangesFileView()
 
@@ -115,15 +110,6 @@ export class ChangesFileViewSlot extends React.Component<
     return (
       <div className="changes-view-slot">
         {injectSlotStylesOnce()}
-        <div className="filter-box-container">
-          <TextBox
-            value={this.state.filterText}
-            placeholder={'Filter'}
-            className="filter-list-filter-field"
-            onValueChanged={this.onFilterTextChanged}
-          />
-          <ChangesFileViewSwitch />
-        </div>
         {this.renderPluginView(view, filteredFiles, this.state.filterText)}
       </div>
     )

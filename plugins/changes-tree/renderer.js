@@ -75,8 +75,180 @@
     }
     return true;
   }
+  var treeCss = `
+.changes-tree-header-row {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-half);
+  border-bottom: var(--base-border);
+}
+
+.changes-tree .filter-box-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.changes-tree .filter-box-container input {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.changes-tree .filter-button {
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+  border-right: none;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.changes-tree .filter-button.active span:first-child {
+  color: var(--box-selected-active-background-color);
+}
+
+.changes-tree .filter-button .active-badge {
+  position: absolute;
+  right: 18px;
+  top: 4px;
+}
+
+.changes-tree .filter-button .active-badge .badge-bg {
+  padding: 1px;
+  border-radius: 50%;
+  background-color: var(--secondary-button-background);
+}
+
+.changes-tree .filter-button .active-badge .badge {
+  width: 5px;
+  height: 5px;
+  background-color: var(--box-selected-active-background-color);
+  border-radius: 50%;
+}
+
+.changes-tree-header {
+  padding: var(--spacing-half) var(--spacing);
+  border-bottom: var(--base-border);
+}
+
+.changes-tree-header .checkbox-component {
+  display: flex;
+}
+
+.changes-tree {
+  flex: 1;
+  overflow-y: auto;
+  user-select: none;
+}
+
+.changes-tree-row {
+  display: flex;
+  align-items: center;
+  height: 29px;
+  padding-right: var(--spacing, 8px);
+  cursor: default;
+}
+
+.changes-tree-row:hover {
+  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.04));
+}
+
+.changes-tree-row .tree-caret {
+  width: 16px;
+  height: 16px;
+  flex: initial;
+  margin-right: 2px;
+  fill: var(--text-secondary-color);
+}
+
+.changes-tree-row .tree-indent {
+  width: 10px;
+  flex: initial;
+}
+
+.changes-tree-row .tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size, 12px);
+  color: var(--text-secondary-color);
+}
+
+.changes-tree-row .tree-count {
+  margin-left: auto;
+  color: var(--text-secondary-color);
+  font-size: var(--font-size-sm, 11px);
+}
+
+.changes-view-slot .filter-box-container input {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.commits-tree-filter-popover {
+  text-align: left;
+  min-width: 240px;
+}
+
+.commits-tree-filter-popover .popover-content {
+  padding: var(--spacing);
+}
+
+.commits-tree-filter-popover .filter-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing);
+}
+
+.commits-tree-filter-popover .filter-popover-header h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.commits-tree-filter-popover .close {
+  flex-shrink: 0;
+  border: 0;
+  height: 16px;
+  width: 16px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-secondary-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.commits-tree-filter-popover .close .octicon {
+  pointer-events: none;
+}
+
+.commits-tree-filter-popover .close:hover {
+  color: var(--text-color);
+}
+
+.commits-tree-filter-popover .filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-half);
+  margin: 0;
+}
+
+.commits-tree-filter-popover .filter-options-footer {
+  border-top: var(--base-border);
+  padding-top: var(--spacing-half);
+  margin-top: var(--spacing-half);
+  text-align: left;
+}
+
+.commits-tree-filter-popover .button-component {
+  min-width: 60px;
+}
+`;
   function styleInjection() {
-    return /* @__PURE__ */ (void 0)("style", null, treeCss);
+    return /* @__PURE__ */ React.createElement("style", null, treeCss);
   }
   function flattenTree(nodes, collapsed, depth, out) {
     const sorted = [...nodes.values()].sort((a, b) => {
@@ -134,7 +306,7 @@
   }
   function TreeCaret(props) {
     const path = props.expanded ? "M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z" : "M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z";
-    return /* @__PURE__ */ (void 0)(
+    return /* @__PURE__ */ React.createElement(
       "svg",
       {
         className: `tree-caret${props.expanded ? " expanded" : ""}`,
@@ -144,10 +316,10 @@
         fill: "currentColor",
         "aria-hidden": "true"
       },
-      /* @__PURE__ */ (void 0)("path", { d: path })
+      /* @__PURE__ */ React.createElement("path", { d: path })
     );
   }
-  var ChangesTreeView = class extends (void 0) {
+  var ChangesTreeView = class extends React.Component {
     filterButtonRef = null;
     constructor(props) {
       super(props);
@@ -195,7 +367,7 @@
       const filters = this.state.statusFilters;
       const counts = countStatuses(files);
       const activeCount = Object.values(filters).filter(Boolean).length;
-      const checkboxRow = (key, label, count) => /* @__PURE__ */ (void 0)(
+      const checkboxRow = (key, label, count) => /* @__PURE__ */ React.createElement(
         Checkbox,
         {
           key,
@@ -204,7 +376,7 @@
           label: `${label} (${count})`
         }
       );
-      return /* @__PURE__ */ (void 0)(
+      return /* @__PURE__ */ React.createElement(
         Popover,
         {
           className: "filter-popover commits-tree-filter-popover",
@@ -215,21 +387,21 @@
           onMousedownOutside: this.closeFilterOptions,
           onClickOutside: this.closeFilterOptions
         },
-        /* @__PURE__ */ (void 0)("div", { className: "filter-popover-header" }, /* @__PURE__ */ (void 0)("h3", { id: "changes-tree-filter-header" }, "Filter Options"), /* @__PURE__ */ (void 0)(
+        /* @__PURE__ */ React.createElement("div", { className: "filter-popover-header" }, /* @__PURE__ */ React.createElement("h3", { id: "changes-tree-filter-header" }, "Filter Options"), /* @__PURE__ */ React.createElement(
           "button",
           {
             className: "close",
             onClick: this.closeFilterOptions,
             "aria-label": "Close"
           },
-          /* @__PURE__ */ (void 0)(Octicon, { symbol: octicons.x })
+          /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.x })
         )),
-        /* @__PURE__ */ (void 0)("div", { className: "commits-tree-filter-options" }, checkboxRow("isIncludedInCommit", "Included in commit", counts.included), checkboxRow("isExcludedFromCommit", "Excluded from commit", counts.excluded), checkboxRow("isNewFile", "New files", counts.newFiles), checkboxRow("isModifiedFile", "Modified files", counts.modifiedFiles), checkboxRow("isDeletedFile", "Deleted files", counts.deletedFiles)),
-        activeCount > 0 ? /* @__PURE__ */ (void 0)("div", { className: "filter-options-footer" }, /* @__PURE__ */ (void 0)(Button, { onClick: this.clearStatusFilters }, "Clear filters")) : null
+        /* @__PURE__ */ React.createElement("div", { className: "commits-tree-filter-options" }, checkboxRow("isIncludedInCommit", "Included in commit", counts.included), checkboxRow("isExcludedFromCommit", "Excluded from commit", counts.excluded), checkboxRow("isNewFile", "New files", counts.newFiles), checkboxRow("isModifiedFile", "Modified files", counts.modifiedFiles), checkboxRow("isDeletedFile", "Deleted files", counts.deletedFiles)),
+        activeCount > 0 ? /* @__PURE__ */ React.createElement("div", { className: "filter-options-footer" }, /* @__PURE__ */ React.createElement(Button, { onClick: this.clearStatusFilters }, "Clear filters")) : null
       );
     }
     render() {
-      const { files, availableWidth } = this.props;
+      const { files, availableWidth, includeAllValue, onIncludeAllChanged } = this.props;
       const filterText = this.state.filterText.trim().toLowerCase();
       const statusFilters = this.state.statusFilters;
       const statusActive = Object.values(statusFilters).some(Boolean);
@@ -244,7 +416,7 @@
       flattenTree(tree, this.state.collapsedFolders, 0, rows);
       const counts = countStatuses(files);
       const activeCount = Object.values(statusFilters).filter(Boolean).length;
-      return /* @__PURE__ */ (void 0)("div", { className: "changes-tree file-list" }, styleInjection(), /* @__PURE__ */ (void 0)("div", { className: "changes-tree-header-row" }, /* @__PURE__ */ (void 0)("div", { className: "filter-box-container" }, /* @__PURE__ */ (void 0)(
+      return /* @__PURE__ */ React.createElement("div", { className: "changes-tree file-list" }, styleInjection(), /* @__PURE__ */ React.createElement("div", { className: "changes-tree-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "filter-box-container" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           className: `button-component filter-button${activeCount > 0 ? " active" : ""}`,
@@ -254,9 +426,9 @@
           title: "Filter Options",
           ariaLabel: "Filter Options"
         },
-        /* @__PURE__ */ (void 0)("span", null, /* @__PURE__ */ (void 0)(Octicon, { symbol: octicons.filter })),
-        activeCount > 0 ? /* @__PURE__ */ (void 0)("span", { className: "active-badge" }, /* @__PURE__ */ (void 0)("div", { className: "badge-bg" }, /* @__PURE__ */ (void 0)("div", { className: "badge" }))) : null
-      ), /* @__PURE__ */ (void 0)(
+        /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.filter })),
+        activeCount > 0 ? /* @__PURE__ */ React.createElement("span", { className: "active-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-bg" }, /* @__PURE__ */ React.createElement("div", { className: "badge" }))) : null
+      ), /* @__PURE__ */ React.createElement(
         TextBox,
         {
           value: this.state.filterText,
@@ -264,7 +436,7 @@
           className: "filter-list-filter-field",
           onValueChanged: this.onFilterTextChanged
         }
-      ), this.props.viewSwitch), this.state.isFilterOptionsOpen ? this.renderFilterPopover(files) : null, /* @__PURE__ */ (void 0)("div", { className: "checkbox-container" }, /* @__PURE__ */ (void 0)(
+      ), this.props.viewSwitch), this.state.isFilterOptionsOpen ? this.renderFilterPopover(files) : null, /* @__PURE__ */ React.createElement("div", { className: "checkbox-container" }, /* @__PURE__ */ React.createElement(
         Checkbox,
         {
           value: includeAllValue,
@@ -276,7 +448,7 @@
       ))), rows.map((row) => {
         const isFolder = row.file === void 0;
         const include = !isFolder && row.file.selection.getSelectionType() === DiffSelectionType.All;
-        return /* @__PURE__ */ (void 0)(
+        return /* @__PURE__ */ React.createElement(
           "div",
           {
             key: row.path,
@@ -295,13 +467,13 @@
             },
             title: row.path
           },
-          isFolder ? /* @__PURE__ */ (void 0)(
+          isFolder ? /* @__PURE__ */ React.createElement(
             TreeCaret,
             {
               expanded: !this.state.collapsedFolders.has(row.path)
             }
-          ) : /* @__PURE__ */ (void 0)("span", { className: "tree-indent", "aria-hidden": "true" }),
-          isFolder ? /* @__PURE__ */ (void 0)("span", { className: "tree-name" }, row.name) : /* @__PURE__ */ (void 0)(
+          ) : /* @__PURE__ */ React.createElement("span", { className: "tree-indent", "aria-hidden": "true" }),
+          isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-name" }, row.name) : /* @__PURE__ */ React.createElement(
             ChangedFile,
             {
               file: row.file,
@@ -315,9 +487,14 @@
               onIncludeChanged: this.props.onIncludeChanged
             }
           ),
-          isFolder ? /* @__PURE__ */ (void 0)("span", { className: "tree-count" }, row.descendantCount) : null
+          isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
         );
       }));
     }
   };
+  globalThis.__GHD_EXTENSION_API__.registerChangesFileView({
+    id: "changes-tree",
+    title: "Tree",
+    component: ChangesTreeView
+  });
 })();

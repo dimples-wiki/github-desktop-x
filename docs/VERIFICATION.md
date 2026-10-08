@@ -269,3 +269,11 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 | E5-8 折叠态证据 | 40-tree-collapsed-state.png（折叠=向右箭头） | ✓ |
 
 补拍：30-changes-list-with-switch.png（List 模式：图标 View as Tree、无 selected 高亮——默认视图正确）。
+
+
+## 第十一轮：树视图完整原生形态（2026-10-08 晚）
+
+- 叶子行复用宿主 `ChangedFile` 组件（勾选框/文件名/**右缘状态徽标**全原生）
+- Tree 模式自带完整 filter 行（复刻 `.filter-box-container`：状态筛选漏斗按钮+气泡+文本框+视图开关）
+- List/Tree 单图标切换（图标=当前视图：List=listUnordered、Tree=自绘 list-tree 树形符号）
+- 12 项断言复验全过；树过滤（readme→1 行）实证；截图 41/46
