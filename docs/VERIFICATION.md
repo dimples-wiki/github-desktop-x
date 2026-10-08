@@ -258,3 +258,14 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 | 4 | 日期输入蠢 | 改为原生 `<input type="date">`（Chromium 日历选择器，value 原生 YYYY-MM-DD 与过滤逻辑兼容，无无效输入可能） |
 
 （盲测结果待两个独立 agent 回填）
+
+
+## 第五轮盲审修复复验（同日）
+
+| 项 | 修复 | 实测 |
+|----|------|------|
+| E3 日期控件协调性 | date input 边框改 `--contrast-border`（与宿主 textboxish 一致） | **date 与周边输入框 borderColor 完全一致**（同为 rgb(135,144,153)） |
+| E5-1 切换按钮换位 | slot 行开关移至行尾（与宿主 filter 行同锚点） | List/Tree 两模式均在搜索框**右侧** |
+| E5-8 折叠态证据 | 40-tree-collapsed-state.png（折叠=向右箭头） | ✓ |
+
+补拍：30-changes-list-with-switch.png（List 模式：图标 View as Tree、无 selected 高亮——默认视图正确）。

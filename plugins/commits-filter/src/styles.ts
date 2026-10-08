@@ -211,12 +211,14 @@ const css = `
   gap: var(--spacing-half);
 }
 
+/* Border matches the host textboxish mixin (--contrast-border), same as the
+   text boxes beside it. */
 .commits-filter-popover .commits-filter-date-row input[type='date'] {
   flex: 1;
   min-width: 0;
   height: var(--text-field-height);
   padding: 0 var(--spacing-half);
-  border: var(--base-border);
+  border: var(--contrast-border);
   border-radius: var(--border-radius);
   background: var(--box-background-color);
   color: var(--text-color);

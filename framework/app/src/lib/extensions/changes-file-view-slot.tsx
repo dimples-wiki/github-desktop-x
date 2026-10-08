@@ -110,13 +110,13 @@ export class ChangesFileViewSlot extends React.Component<
       <div className="changes-view-slot">
         {injectSlotStylesOnce()}
         <div className="filter-box-container">
-          <ChangesFileViewSwitch />
           <TextBox
             value={this.state.filterText}
             placeholder={'Filter'}
             className="filter-list-filter-field"
             onValueChanged={this.onFilterTextChanged}
           />
+          <ChangesFileViewSwitch />
         </div>
         {this.renderPluginView(view, filteredFiles)}
       </div>
