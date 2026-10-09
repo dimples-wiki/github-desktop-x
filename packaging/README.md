@@ -1,13 +1,17 @@
-# Homebrew Tap：github-desktop-x
+# Homebrew Tap：githubx
 
-让用户通过 Homebrew 一条命令安装带 Commits 筛选功能的 GitHub Desktop 二开版：
+让用户通过 Homebrew 一条命令安装带 Commits 筛选功能的 GitHub Desktop 二开版（应用名 GitHub Desktop X）。
+
+本仓库根目录的 `Casks/`（符号链接 → `packaging/tap/Casks`）让仓库本身即可作为 tap 使用：
 
 ```bash
 brew tap OWNER/github-desktop-x https://github.com/OWNER/github-desktop-x
-brew install --cask github-desktop-x
+brew install --cask githubx
 # 未公证的本地构建建议：
-brew install --cask --no-quarantine github-desktop-x
+brew install --cask --no-quarantine githubx
 ```
+
+（若发布到符合规范的独立 tap 仓库 `OWNER/homebrew-githubx`，则 `brew tap OWNER/githubx` 即可。）
 
 ## 本地验证（不发布到 GitHub 也能测）
 
@@ -16,18 +20,18 @@ brew install --cask --no-quarantine github-desktop-x
 ./scripts/package-release.sh
 
 # 2) 建一个本地 tap 指向本仓库的 packaging/tap
-brew tap-new --no-git local/dimple 2>/dev/null || true
-ln -s "$(pwd)/packaging/tap/Casks" "$(brew --repository)/Library/Taps/local/homebrew-dimple/Casks"
+brew tap-new --no-git local/x 2>/dev/null || true
+ln -s "$(pwd)/packaging/tap/Casks" "$(brew --repository)/Library/Taps/local/homebrew-x/Casks"
 
 # 3) 把 cask 里的 url 换成 file:// 本地路径后安装测试
-brew install --cask --no-quarantine local/dimple/github-desktop-x
+brew install --cask --no-quarantine local/x/githubx
 ```
 
 ## 与官方 GitHub Desktop 的共存设计
 
 | 维度 | 官方版 | 本二开版 |
 |------|--------|----------|
-| 应用名 | GitHub Desktop.app | GitHub Desktop Dimple.app |
+| 应用名 | GitHub Desktop.app | GitHub Desktop X.app |
 | userData | ~/Library/Application Support/GitHub Desktop* | ~/Library/Application Support/GitHub Desktop Dimple |
 | OAuth 协议 | x-github-desktop-auth | x-github-desktop-dev-auth |
 | 更新 | Squirrel 自动更新（官方服务器） | 更新指向无效地址（静默）；升级 = 改 submodule 重放补丁后重新发版 |

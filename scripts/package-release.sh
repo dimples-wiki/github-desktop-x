@@ -41,10 +41,17 @@ ditto -ck --keepParent "$APP" "$ZIP"
 
 SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
 echo
+
+# 自动把版本与 sha256 钉进 cask（githubx）
+CASK="$ROOT/Casks/githubx.rb"
+if [ -f "$CASK" ]; then
+  sed -i '' -E 's|sha256 :no_check|sha256 "'"$SHA"'"|; s|sha256 "[0-9a-f]{64}"|sha256 "'"$SHA"'"|' "$CASK"
+  sed -i '' -E 's|version "[^"]+"|version "'"$VERSION"'"|' "$CASK"
+  echo "[release] cask 已更新：$CASK"
+fi
 echo "================= 发布物料 ================="
 echo "zip:  $ZIP"
 echo "version: $VERSION"
 echo "sha256:  $SHA"
-echo "（把 version/sha256/url 更新到 packaging/tap/Casks/github-desktop-x.rb，"
-echo "  并将 zip 上传到 GitHub Releases 对应 tag）"
+echo "（cask 已自动钉入 version/sha256；将 zip 上传到 GitHub Releases 对应 tag 即可）"
 echo "============================================="

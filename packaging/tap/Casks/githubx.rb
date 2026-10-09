@@ -1,7 +1,7 @@
-cask "github-desktop-x" do
+cask "githubx" do
   version "3.6.6"
   # 发布时用 scripts/package-release.sh 输出的 SHA-256 替换
-  sha256 :no_check
+  sha256 "11cd842485acd23bf678f4abe674d45f3edf37022fd0faef22070d53c2fff006"
 
   url "https://github.com/OWNER/github-desktop-x/releases/download/v#{version}/GitHub-Desktop-X-#{version}-macOS-arm64.zip",
       verified: "github.com/OWNER/github-desktop-x"
@@ -25,7 +25,7 @@ cask "github-desktop-x" do
 
   # 产物为 ad-hoc 签名（本地验证通过；公开发布需替换为开发者签名+公证，
   # 参见仓库 docs/FEASIBILITY-BREW-PLUGIN.md）。未公证的安装建议：
-  #   brew install --cask --no-quarantine github-desktop-x
+  #   brew install --cask --no-quarantine githubx
   zap trash: [
     "~/Library/Application Support/GitHub Desktop X",
   ]
