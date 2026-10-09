@@ -3,8 +3,7 @@ cask "githubx" do
   # 发布时用 scripts/package-release.sh 输出的 SHA-256 替换
   sha256 "11cd842485acd23bf678f4abe674d45f3edf37022fd0faef22070d53c2fff006"
 
-  url "https://github.com/dimples-wiki/github-desktop-x/releases/download/v#{version}/GitHub-Desktop-X-#{version}-macOS-arm64.zip",
-      verified: "github.com/dimples-wiki/github-desktop-x"
+  url "https://github.com/dimples-wiki/github-desktop-x/releases/download/v#{version}/GitHub-Desktop-X-#{version}-macOS-arm64.zip"
   name "GitHub Desktop X"
   desc "GitHub Desktop fork with a native-feeling, filterable Commits tab"
   homepage "https://github.com/dimples-wiki/github-desktop-x"
@@ -14,7 +13,7 @@ cask "githubx" do
     strategy :github_latest
   end
 
-  depends_on macos: ">= :monterey"
+  depends_on macos: :monterey
   depends_on arch: :arm64
 
   # 与官方 GitHub Desktop 共存：

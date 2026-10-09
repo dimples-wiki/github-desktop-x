@@ -19,6 +19,7 @@
 
 ```bash
 brew tap dimples-wiki/githubx
+brew trust dimples-wiki/githubx   # Homebrew 7+ 需显式信任第三方 tap
 brew install --cask githubx
 ```
 
