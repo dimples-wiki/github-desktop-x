@@ -5,13 +5,13 @@
 本仓库根目录的 `Casks/`（符号链接 → `packaging/tap/Casks`）让仓库本身即可作为 tap 使用：
 
 ```bash
-brew tap OWNER/github-desktop-x https://github.com/OWNER/github-desktop-x
+brew tap dimples-wiki/github-desktop-x https://github.com/dimples-wiki/github-desktop-x
 brew install --cask githubx
 # 未公证的本地构建建议：
 brew install --cask --no-quarantine githubx
 ```
 
-（若发布到符合规范的独立 tap 仓库 `OWNER/homebrew-githubx`，则 `brew tap OWNER/githubx` 即可。）
+（若发布到符合规范的独立 tap 仓库 `dimples-wiki/homebrew-githubx`，则 `brew tap dimples-wiki/githubx` 即可。）
 
 ## 本地验证（不发布到 GitHub 也能测）
 
@@ -45,5 +45,5 @@ bundle ID 暂与官方一致（com.github.GitHubClient，跟随上游）；若�
 1. Apple Developer 签名 + 公证（替换 ad-hoc）：`scripts/package-release.sh` 中
    打包通道改 production 并提供 `CSC_NAME`（上游 build.ts 会走 osxSign distribution + osxNotarize）。
 2. zip 上传 GitHub Releases（tag = v<version>），把真实 sha256 写进 cask。
-3. cask 中 `OWNER` 替换为实际 GitHub 用户/组织。
+3. cask 中 `dimples-wiki` 替换为实际 GitHub 用户/组织。
 4. （可选）向 homebrew-cask 提交 PR，或维持独立 tap。
