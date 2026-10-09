@@ -1,5 +1,5 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { existsSync, readFileSync, readdirSync } from 'fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'fs'
 import { join } from 'path'
 
 import { app } from 'electron'
@@ -89,6 +89,37 @@ function scanPlugins(directory: string): ReadonlyArray<IInstalledPlugin> {
 }
 
 /**
+ * Seeds plugins shipped with the app (Resources/bundled-plugins) into the
+ * user's plugins directory, so a fresh install (e.g. via Homebrew) has the
+ * official plugins out of the box. Existing directories are never
+ * overwritten — user state always wins.
+ */
+function seedBundledPlugins(directory: string): void {
+  const bundled = join(process.resourcesPath ?? '', 'bundled-plugins')
+  if (!existsSync(bundled)) {
+    return
+  }
+
+  try {
+    for (const entry of readdirSync(bundled, { withFileTypes: true })) {
+      if (!entry.isDirectory()) {
+        continue
+      }
+
+      const target = join(directory, entry.name)
+      if (existsSync(target)) {
+        continue
+      }
+
+      cpSync(join(bundled, entry.name), target, { recursive: true })
+      log.info(`[extensions] seeded bundled plugin ${entry.name}`)
+    }
+  } catch (error) {
+    log.error('[extensions] failed to seed bundled plugins', error)
+  }
+}
+
+/**
  * Starts the extension host: discovers installed plugins, makes their
  * manifests known to the menu, delivers their renderer bundles to the
  * renderer once it announces readiness, and rebuilds the application menu
@@ -96,6 +127,8 @@ function scanPlugins(directory: string): ReadonlyArray<IInstalledPlugin> {
  */
 export function initializeExtensionHost() {
   const directory = getPluginsDirectory()
+  mkdirSync(directory, { recursive: true })
+  seedBundledPlugins(directory)
   const plugins = scanPlugins(directory)
 
   if (plugins.length === 0) {

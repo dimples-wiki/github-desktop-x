@@ -1,7 +1,7 @@
 cask "githubx" do
   version "3.6.6"
   # 发布时用 scripts/package-release.sh 输出的 SHA-256 替换
-  sha256 "11cd842485acd23bf678f4abe674d45f3edf37022fd0faef22070d53c2fff006"
+  sha256 "ac2e4726b186bc40775a8a5e9cca877412c1de97c8751326dd576e62c1579344"
 
   url "https://github.com/dimples-wiki/github-desktop-x/releases/download/v#{version}/GitHub-Desktop-X-#{version}-macOS-arm64.zip"
   name "GitHub Desktop X"

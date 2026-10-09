@@ -28,6 +28,15 @@ echo "[release] 3/4 构建+打包（development 通道，ad-hoc 签名）"
 APP="$WS/dist/GitHub Desktop X-darwin-arm64/GitHub Desktop X.app"
 [ -d "$APP" ] || { echo "[release] 打包失败，查看 /tmp/github-desktop-x-package.log"; exit 1; }
 
+# 内置官方插件：随包分发，首次启动播种到 userData（plugin-host 完成）
+for d in "$ROOT"/plugins/*/; do
+  name="$(basename "$d")"
+  [ -f "$d/renderer.js" ] || continue
+  mkdir -p "$APP/Contents/Resources/bundled-plugins/$name"
+  cp "$d/plugin.json" "$d/renderer.js" "$APP/Contents/Resources/bundled-plugins/$name/"
+done
+codesign --force --deep --sign - "$APP"
+
 codesign --verify --deep "$APP"
 echo "[release] 签名校验通过：$(codesign -dv "$APP" 2>&1 | grep -E 'Signature=' | head -1)"
 

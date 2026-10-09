@@ -23,8 +23,10 @@ brew trust dimples-wiki/githubx   # Homebrew 7+ 需显式信任第三方 tap
 brew install --cask githubx
 ```
 
-> 未签名的本地构建建议 `brew install --cask --no-quarantine githubx`。
 > 一行版：`brew tap dimples-wiki/githubx && brew trust dimples-wiki/githubx && brew install --cask githubx`
+>
+> **首次启动**：应用未经 Apple 公证，Gatekeeper 可能拦截。在 系统设置 → 隐私与安全性 点「仍要打开」，
+> 或执行 `sudo xattr -rd com.apple.quarantine "/Applications/GitHub Desktop X.app"`（每台机器一次）。
 
 要求：macOS Monterey 及以上 · Apple Silicon。与官方 GitHub Desktop 可共存（应用名、userData、OAuth 协议头均隔离）。
 

@@ -1,12 +1,14 @@
 diff --git a/app/package.json b/app/package.json
-index 067ba58..3639573 100644
+index 067ba58..c7fa3e1 100644
 --- a/app/package.json
 +++ b/app/package.json
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,7 @@
  {
    "name": "desktop",
 -  "productName": "GitHub Desktop",
+-  "bundleID": "com.github.GitHubClient",
 +  "productName": "GitHub Desktop X",
-   "bundleID": "com.github.GitHubClient",
++  "bundleID": "com.dimples-wiki.github-desktop-x",
    "companyName": "GitHub, Inc.",
    "version": "3.6.6",
+   "main": "./main.js",
