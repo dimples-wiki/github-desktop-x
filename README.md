@@ -24,7 +24,7 @@ brew install --cask githubx
 ```
 
 > 未签名的本地构建建议 `brew install --cask --no-quarantine githubx`。
-> 也可一行直装（自动 tap）：`brew install --cask dimples-wiki/githubx/githubx`。
+> 一行版：`brew tap dimples-wiki/githubx && brew trust dimples-wiki/githubx && brew install --cask githubx`
 
 要求：macOS Monterey 及以上 · Apple Silicon。与官方 GitHub Desktop 可共存（应用名、userData、OAuth 协议头均隔离）。
 
