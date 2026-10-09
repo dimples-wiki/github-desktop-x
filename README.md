@@ -32,7 +32,7 @@ brew install --cask githubx
 
 ## 这是什么
 
-在原生体验之上新增两个**运行时插件**（删除插件目录即回到原生行为）：
+在原生体验之上新增两个**内置插件**（随应用分发，开箱即用）：
 
 - **Commits 标签页** —— 复用原生提交列表，支持按提交人 / message 模糊 / 描述正文 / 时间范围筛选，跨 tab 筛选状态保留
 - **Changes Tree 视图** —— 文件列表的目录树形态，折叠/展开、树内筛选；List ↔ Tree 图标一键切换，与原生列表像素级一致
@@ -54,6 +54,60 @@ workspace/     组装产物（gitignore，不入库）
 工作方式：`assemble.sh` 用上游树 + 补丁 + framework 组装出可构建的 workspace →
 插件经 esbuild 打包后由主进程扫描、IPC 下发、renderer eval 注册 ——
 **上游不感知插件，官方升级只需维护胶水层**。
+
+## 插件：内置 + 动态加载
+
+应用启动时会扫描插件目录并动态注册。**内置的两个插件随应用分发、缺失时自动恢复**；
+你也可以按同样的方式加载自己的插件。
+
+### 动态加载一个插件
+
+把插件放进插件目录后重启应用：
+
+```bash
+# macOS
+~/Library/Application Support/GitHub Desktop X/plugins/<plugin-id>/
+├── plugin.json    # {"id":"my-plugin","title":"My Plugin","accelerator":""}
+└── renderer.js    # esbuild 打包产物（IIFE）
+```
+
+- `plugin.json` 的 `accelerator` 是可选的全局快捷键（如 `CmdOrCtrl+Shift+Y`）
+- 删除插件目录并重启即卸载；内置插件删除后会在下次启动时自动恢复
+
+### 开发一个插件
+
+插件运行在 renderer 进程，顶层调用扩展点即可注册能力：
+
+```js
+// 仓库页新增一个标签页
+globalThis.__GHD_EXTENSION_API__.registerRepositorySection({
+  id: 'my-plugin', title: 'My Plugin',
+  sidebarComponent: MySidebar,        // React 组件
+  refreshOnActivate: 'history',
+})
+
+// 或：替换 Changes 页的文件列表视图
+globalThis.__GHD_EXTENSION_API__.registerChangesFileView({
+  id: 'my-view', title: 'My View', component: MyView,
+})
+```
+
+运行时 API（`globalThis.__GHD_EXTENSION_API__`）提供 React、宿主组件
+（`Button` `TextBox` `Checkbox` `Select` `Popover` `Octicon` `ChangedFile` `CommitList`）、
+`octicons` 图标集与 `log`。**复用宿主组件与原生类名**是与原生体验保持一致的关键。
+
+完整可运行的参考实现见 [`plugins/`](plugins/)：
+[`commits-filter`](plugins/commits-filter/src/commits-sidebar.tsx)（标签页插件）
+与 [`changes-tree`](plugins/changes-tree/src/index.tsx)（视图插件）。
+
+本地迭代：把开发目录指给应用（免拷贝）——
+
+```bash
+DIMPLE_PLUGINS_DIR=/path/to/my-plugins open -a "GitHub Desktop X" --args --cli-open=你的仓库
+```
+
+打包：`esbuild src/index.tsx --bundle --format=iife --platform=browser
+--jsx=transform --jsx-factory=React.createElement --outfile=renderer.js`。
 
 ## 从源码构建
 
