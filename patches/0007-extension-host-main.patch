@@ -1,5 +1,5 @@
 diff --git a/app/src/main-process/main.ts b/app/src/main-process/main.ts
-index 846b399..474de3f 100644
+index 846b399..c6901e0 100644
 --- a/app/src/main-process/main.ts
 +++ b/app/src/main-process/main.ts
 @@ -14,6 +14,7 @@ import * as Fs from 'fs'
@@ -21,3 +21,17 @@ index 846b399..474de3f 100644
    Menu.setApplicationMenu(
      buildDefaultMenu({
        selectedShell: null,
+@@ -779,7 +784,12 @@ app.on(
+ function createWindow() {
+   const window = new AppWindow()
+ 
+-  if (__DEV__) {
++  // Debug extensions (React DevTools / axe) are a developer affordance,
++  // not part of the product: opt in explicitly with DIMPLE_DEVTOOLS=1.
++  // Loading them unconditionally in development-channel builds made every
++  // user launch pull CRX bundles and throw page errors from their
++  // content scripts.
++  if (__DEV__ && process.env.DIMPLE_DEVTOOLS === '1') {
+     const {
+       default: installExtension,
+       REACT_DEVELOPER_TOOLS,

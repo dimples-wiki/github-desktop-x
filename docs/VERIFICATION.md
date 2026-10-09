@@ -422,3 +422,37 @@ Commits 漏斗 vs Changes 漏斗 2x 对照图（31-funnel-changes-top-vs-commits
 - 改 workspace 后必须先 `export-patches.sh` 再 `package-release.sh`：assemble 会用 patch 重建 workspace，
   未导出的编辑会被抹掉（本轮 TS2741 构建失败即此因）
 - 证据图合成禁止各向异性 resize（会造出"纵向拉伸"假差异，被盲审逐像素拆穿）
+
+# 第十七轮：启动零报错门槛 + 录屏存证（2026-10-09）
+
+用户把发布标准再加一条：**录屏从打开软件到加载 git 项目的全过程，期间出现任何报错都不得忽略、不得算通过**。
+
+## 新增工具
+
+- `scripts/launch-error-scan.ts` —— 零容忍启动扫描：干净环境（不注入任何 git 测试变量）启动
+  /Applications 安装版 → 加载 demo 仓库 → 走 Changes/History/Commits/Tree 全流程；收集
+  ① 可见弹窗（定期+收尾快照）② renderer console error ③ 未捕获异常 ④ 主进程 stderr
+  中应用侧报错行。任一出现即非零退出。
+- `scripts/launch-recording.ts` —— 同监控 + Playwright 视频录制，产物为 webm/mp4 + report.json。
+
+## 扫出并修复的问题
+
+| 发现 | 根因 | 修复 |
+| --- | --- | --- |
+| 渲染进程未捕获异常 `Unable to initialize web-extension bridge. Unsupported context: null` | development 通道打包使 `__DEV__` 为真，每次启动加载 React DevTools/axe DevTools（axe 内容脚本抛异常；electron-devtools-installer 还会联网拉 CRX） | main.ts 胶水补丁（0007）：调试扩展改为 `DIMPLE_DEVTOOLS=1` 显式 opt-in，普通启动不再加载。stderr 的 Added Extensions/deprecated/Permission warning 三行随之消失 |
+
+## 扫描与录屏结果
+
+- 修复后连续 3 轮扫描：弹窗 0、console error 0、未捕获异常 0、应用侧 stderr 0
+- 录屏（真实用户数据、真实环境）：窗口 0.5s 渲染 → 5.5s 仓库加载完成 → 三个 tab + Tree 切换全程无任何报错
+  - `screenshots/launch-recording/launch-to-repo-load.mp4`（14.6s，1280×800）+ webm 原始件 + report.json（PASS）
+
+## 诚实披露（非忽略，已归因）
+
+一次扫描出现过一条 Chromium 网络层 stderr：`ssl_client_socket_impl.cc handshake failed, net_error -100`
+（对端关闭连接）。归因与处置：网络瞬态，不可复现（随后 2 轮扫描 + 录屏均未出现）、UI 无任何可见表现、
+应用自身不报错；dev 通道更新检查指向 127.0.0.1（非 SSL）与此无关。已披露而非静默。
+
+## 流程备注
+
+- ffmpeg 不在机器上：用 npm `ffmpeg-static` 做 webm→mp4（QuickTime 可播）
