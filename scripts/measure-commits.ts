@@ -4,7 +4,7 @@
 // List/Tree switch to its right.
 const { _electron } = require('/Users/yoko/dimple-github-desktop/workspace/node_modules/playwright')
 
-const APP = '/Applications/GitHub Desktop Dimple.app/Contents/MacOS/GitHub Desktop Dimple'
+const APP = '/Applications/GitHub Desktop X.app/Contents/MacOS/GitHub Desktop X'
 const OUT = '/Users/yoko/dimple-github-desktop/screenshots'
 
 async function measureChanges(page) {

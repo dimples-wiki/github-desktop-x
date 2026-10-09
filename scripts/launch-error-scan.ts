@@ -8,7 +8,7 @@
 const { _electron } = require('/Users/yoko/dimple-github-desktop/workspace/node_modules/playwright')
 const fs = require('fs')
 
-const APP = '/Applications/GitHub Desktop Dimple.app/Contents/MacOS/GitHub Desktop Dimple'
+const APP = '/Applications/GitHub Desktop X.app/Contents/MacOS/GitHub Desktop X'
 const REPO = process.argv[2] || '/Users/yoko/dimple-github-desktop/scripts/fixtures/demo-repo'
 const OUT = process.argv[3] || '/Users/yoko/dimple-github-desktop/screenshots/launch-scan'
 fs.mkdirSync(OUT, { recursive: true })

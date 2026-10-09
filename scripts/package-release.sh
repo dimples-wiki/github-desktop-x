@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 产出可分发的发布包：GitHub-Desktop-Dimple-<version>-macOS-arm64.zip
+# 产出可分发的发布包：GitHub-Desktop-X-<version>-macOS-arm64.zip
 # 同时打印 cask 所需的 version 与 sha256。
 #
 # 通道说明：固定使用 development 通道打包 —— ad-hoc 签名（本机可验可跑）、
@@ -25,7 +25,7 @@ echo "[release] 3/4 构建+打包（development 通道，ad-hoc 签名）"
   DESKTOP_E2E_UPDATES_URL=http://127.0.0.1:9/update \
   yarn build:prod) > /tmp/dimple-package.log 2>&1
 
-APP="$WS/dist/GitHub Desktop Dimple-darwin-arm64/GitHub Desktop Dimple.app"
+APP="$WS/dist/GitHub Desktop X-darwin-arm64/GitHub Desktop X.app"
 [ -d "$APP" ] || { echo "[release] 打包失败，查看 /tmp/dimple-package.log"; exit 1; }
 
 codesign --verify --deep "$APP"
@@ -35,7 +35,7 @@ echo "[release] 4/4 压缩发布包"
 VERSION="$(python3 -c "import json;print(json.load(open('$WS/app/package.json'))['version'])")"
 OUT_DIR="$ROOT/dist-release"
 mkdir -p "$OUT_DIR"
-ZIP="$OUT_DIR/GitHub-Desktop-Dimple-${VERSION}-macOS-arm64.zip"
+ZIP="$OUT_DIR/GitHub-Desktop-X-${VERSION}-macOS-arm64.zip"
 rm -f "$ZIP"
 ditto -ck --keepParent "$APP" "$ZIP"
 

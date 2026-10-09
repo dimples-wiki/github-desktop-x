@@ -2,7 +2,7 @@
 // Dumps bounding rects + computed styles for both modes to JSON.
 const { _electron } = require('/Users/yoko/dimple-github-desktop/workspace/node_modules/playwright')
 
-const APP = '/Applications/GitHub Desktop Dimple.app/Contents/MacOS/GitHub Desktop Dimple'
+const APP = '/Applications/GitHub Desktop X.app/Contents/MacOS/GitHub Desktop X'
 const OUT = '/Users/yoko/dimple-github-desktop/screenshots'
 
 const RECT_PROPS = ['x', 'y', 'width', 'height', 'top', 'left', 'right', 'bottom']

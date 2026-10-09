@@ -611,7 +611,7 @@ EDITS = [
     (
         "app/package.json",
         '  "productName": "GitHub Desktop",',
-        '  "productName": "GitHub Desktop Dimple",',
+        '  "productName": "GitHub Desktop X",',
         1,
     ),
 ]
