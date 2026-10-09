@@ -1,4 +1,4 @@
-# dimple-github-desktop 开发方案（PLAN）
+# github-desktop-x 开发方案（PLAN）
 
 > 目标：以 **git submodule + 最小胶水补丁 + 独立功能模块** 的方式对 GitHub Desktop 二开，
 > 在 History 旁新增 **Commits** 标签页：复用原生提交列表，增加筛选能力（提交人 / message 模糊搜索 / 描述搜索 / 时间范围），筛选范围天然限定为当前选中分支。
@@ -7,7 +7,7 @@
 ## 1. 总体架构
 
 ```
-dimple-github-desktop/               ← 父仓库（我们的二开仓库）
+github-desktop-x/               ← 父仓库（我们的二开仓库）
 ├── upstream/                        ← git submodule：desktop/desktop，锁定 release-3.6.6（浅克隆）
 ├── feature/                         ← 独立功能模块（只包含「新增文件」，路径与上游一一对应）
 │   └── commits-filter/

@@ -1,4 +1,4 @@
-# dimple-github-desktop
+# github-desktop-x
 
 GitHub Desktop（[desktop/desktop](https://github.com/desktop/desktop)）的二开项目：
 在 History 旁新增 **Commits** 标签页——复用原生提交列表，支持按 **提交人 / message 模糊搜索 / 描述 / 时间范围** 筛选（范围天然限定为当前选中分支）。

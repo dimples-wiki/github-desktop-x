@@ -2,12 +2,12 @@
 // walked. Video is saved alongside a machine-readable error report.
 // Release gate: any visible error dialog, renderer console error, uncaught
 // exception or app-attributed stderr error FAILS the run.
-const { _electron } = require('/Users/yoko/dimple-github-desktop/workspace/node_modules/playwright')
+const { _electron } = require('/Users/yoko/github-desktop-x/workspace/node_modules/playwright')
 const fs = require('fs')
 
 const APP = '/Applications/GitHub Desktop X.app/Contents/MacOS/GitHub Desktop X'
-const REPO = process.argv[2] || '/Users/yoko/dimple-github-desktop/scripts/fixtures/demo-repo'
-const OUT = process.argv[3] || '/Users/yoko/dimple-github-desktop/screenshots/launch-recording'
+const REPO = process.argv[2] || '/Users/yoko/github-desktop-x/scripts/fixtures/demo-repo'
+const OUT = process.argv[3] || '/Users/yoko/github-desktop-x/screenshots/launch-recording'
 fs.mkdirSync(OUT, { recursive: true })
 
 const findings = []

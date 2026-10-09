@@ -1,5 +1,5 @@
 /* 一次性诊断：启动后 dump UI 状态 + 截图 */
-const driver = require('/Users/yoko/dimple-github-desktop/scripts/gui/driver.js')
+const driver = require('/Users/yoko/github-desktop-x/scripts/gui/driver.js')
 
 ;(async () => {
   const { app, page } = await driver.launch()

@@ -1,9 +1,9 @@
 // Pixel-level DOM measurement: native List header vs plugin Tree header.
 // Dumps bounding rects + computed styles for both modes to JSON.
-const { _electron } = require('/Users/yoko/dimple-github-desktop/workspace/node_modules/playwright')
+const { _electron } = require('/Users/yoko/github-desktop-x/workspace/node_modules/playwright')
 
 const APP = '/Applications/GitHub Desktop X.app/Contents/MacOS/GitHub Desktop X'
-const OUT = '/Users/yoko/dimple-github-desktop/screenshots'
+const OUT = '/Users/yoko/github-desktop-x/screenshots'
 
 const RECT_PROPS = ['x', 'y', 'width', 'height', 'top', 'left', 'right', 'bottom']
 const STYLE_PROPS = [
@@ -115,7 +115,7 @@ async function measure(page, label) {
 ;(async () => {
   const app = await _electron.launch({
     executablePath: APP,
-    args: ['--cli-open=/Users/yoko/dimple-github-desktop/scripts/fixtures/demo-repo'],
+    args: ['--cli-open=/Users/yoko/github-desktop-x/scripts/fixtures/demo-repo'],
     env: {
       ...process.env,
       GIT_CONFIG_GLOBAL: '/tmp/gh3/.gitconfig',

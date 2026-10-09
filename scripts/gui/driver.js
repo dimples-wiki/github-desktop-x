@@ -1,5 +1,5 @@
 /**
- * dimple-github-desktop GUI 驱动
+ * github-desktop-x GUI 驱动
  *
  * 用 workspace 自带的 playwright 驱动 Electron 应用（_electron.launch），
  * 复刻上游 app/test/e2e/e2e-fixtures.ts 的启动方式：

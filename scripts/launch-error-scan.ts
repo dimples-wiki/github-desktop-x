@@ -5,12 +5,12 @@
 //  - renderer console errors and uncaught exceptions
 //  - main-process stderr (app-attributed lines only)
 // Exit code 0 only when nothing fired.
-const { _electron } = require('/Users/yoko/dimple-github-desktop/workspace/node_modules/playwright')
+const { _electron } = require('/Users/yoko/github-desktop-x/workspace/node_modules/playwright')
 const fs = require('fs')
 
 const APP = '/Applications/GitHub Desktop X.app/Contents/MacOS/GitHub Desktop X'
-const REPO = process.argv[2] || '/Users/yoko/dimple-github-desktop/scripts/fixtures/demo-repo'
-const OUT = process.argv[3] || '/Users/yoko/dimple-github-desktop/screenshots/launch-scan'
+const REPO = process.argv[2] || '/Users/yoko/github-desktop-x/scripts/fixtures/demo-repo'
+const OUT = process.argv[3] || '/Users/yoko/github-desktop-x/screenshots/launch-scan'
 fs.mkdirSync(OUT, { recursive: true })
 
 const findings = []

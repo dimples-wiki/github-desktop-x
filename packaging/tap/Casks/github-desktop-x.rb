@@ -1,13 +1,13 @@
-cask "dimple-github-desktop" do
+cask "github-desktop-x" do
   version "3.6.6"
   # 发布时用 scripts/package-release.sh 输出的 SHA-256 替换
   sha256 :no_check
 
-  url "https://github.com/OWNER/dimple-github-desktop/releases/download/v#{version}/GitHub-Desktop-X-#{version}-macOS-arm64.zip",
-      verified: "github.com/OWNER/dimple-github-desktop"
+  url "https://github.com/OWNER/github-desktop-x/releases/download/v#{version}/GitHub-Desktop-X-#{version}-macOS-arm64.zip",
+      verified: "github.com/OWNER/github-desktop-x"
   name "GitHub Desktop X"
   desc "GitHub Desktop fork with a native-feeling, filterable Commits tab"
-  homepage "https://github.com/OWNER/dimple-github-desktop"
+  homepage "https://github.com/OWNER/github-desktop-x"
 
   livecheck do
     url :homepage
@@ -25,7 +25,7 @@ cask "dimple-github-desktop" do
 
   # 产物为 ad-hoc 签名（本地验证通过；公开发布需替换为开发者签名+公证，
   # 参见仓库 docs/FEASIBILITY-BREW-PLUGIN.md）。未公证的安装建议：
-  #   brew install --cask --no-quarantine dimple-github-desktop
+  #   brew install --cask --no-quarantine github-desktop-x
   zap trash: [
     "~/Library/Application Support/GitHub Desktop X",
   ]

@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGINS="$ROOT/plugins"
 ESBUILD="$ROOT/workspace/node_modules/esbuild/bin/esbuild"
 
-source /Users/yoko/.local/dimple-env.sh
+source /Users/yoko/.local/github-desktop-x-env.sh
 command -v node >/dev/null || { echo "node is required"; exit 1; }
 [ -x "$ESBUILD" ] || { echo "esbuild missing (run yarn install in workspace first)"; exit 1; }
 
@@ -45,15 +45,15 @@ for plugin_dir in "$PLUGINS"/*/; do
   # Optional tests: plugins/<name>/test/*.test.ts (node:test style)
   for test in "$plugin_dir"/test/*.test.ts; do
     [ -e "$test" ] || continue
-    out="/tmp/dimple-plugin-test-$name.js"
+    out="/tmp/github-desktop-x-plugin-test-$name.js"
     node "$ESBUILD" "$test" --bundle --platform=node --format=cjs --outfile="$out"
     echo "[build-plugins] running tests: $name"
-    node "$out" > /tmp/dimple-plugin-test-output.txt 2>&1 || {
-      cat /tmp/dimple-plugin-test-output.txt
+    node "$out" > /tmp/github-desktop-x-plugin-test-output.txt 2>&1 || {
+      cat /tmp/github-desktop-x-plugin-test-output.txt
       echo "[build-plugins] tests FAILED: $name"
       exit 1
     }
-    grep -E "tests |pass |fail " /tmp/dimple-plugin-test-output.txt | sed 's/^/    /' || true
+    grep -E "tests |pass |fail " /tmp/github-desktop-x-plugin-test-output.txt | sed 's/^/    /' || true
   done
 done
 

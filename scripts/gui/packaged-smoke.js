@@ -1,7 +1,7 @@
 /* 打包产物冒烟：直接启动 dist 下的 .app 二进制，验证 Commits 标签页可用 */
 const path = require('path')
 const fs = require('fs')
-const driver = require('/Users/yoko/dimple-github-desktop/scripts/gui/driver.js')
+const driver = require('/Users/yoko/github-desktop-x/scripts/gui/driver.js')
 const { _electron } = require(path.join(
   __dirname, '..', '..', 'workspace', 'node_modules', 'playwright'
 ))

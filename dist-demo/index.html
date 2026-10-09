@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub Desktop X · 远程验收演示</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0d1117; color: #e6edf3;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h1 .x { color: #58a6ff; }
+  .sub { color: #8b949e; margin: 0 0 28px; }
+  h2 { font-size: 18px; border-top: 1px solid #21262d; padding-top: 28px; margin-top: 36px; }
+  video {
+    width: 100%; border-radius: 12px; border: 1px solid #30363d;
+    background: #000; display: block;
+  }
+  .cap { color: #8b949e; font-size: 13px; margin: 8px 0 0; }
+  .iconrow { display: flex; gap: 28px; align-items: center; margin-top: 12px; }
+  .iconrow img { width: 148px; border-radius: 22%; border: 1px solid #30363d; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 14px; }
+  th, td { border: 1px solid #30363d; padding: 8px 12px; text-align: left; }
+  th { background: #161b22; }
+  td:first-child { white-space: nowrap; }
+  .ok { color: #3fb950; font-weight: 600; }
+  .warn { color: #d29922; }
+  code { background: #161b22; padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+  ul { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .foot { color: #8b949e; font-size: 12px; margin-top: 40px; border-top: 1px solid #21262d; padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GitHub Desktop <span class="x">X</span> · 远程验收演示</h1>
+  <p class="sub">GitHub Desktop 二开（动态插件架构）· 录制于本机（Mac mini，macOS arm64）· 2026-10-09</p>
+
+  <h2>自动化操作录屏（启动 → 加载 git 仓库 → 全功能走查）</h2>
+  <video controls src="demo.mp4"></video>
+  <p class="cap">内容：应用冷启动并自动加载 demo 仓库（全程无任何报错弹窗）→ Changes 页 List ↔ Tree 切换、文件夹折叠/展开、Tree 内文本筛选 → History → Commits 页漏斗（含 caret）与高级筛选弹层、作者筛选（9 of 34 commits）→ 切换 tab 后筛选保留 → 清除筛选。</p>
+
+  <h2>应用图标（黑底 · 插口眼）</h2>
+  <div class="iconrow">
+    <img src="icon.png" alt="app icon">
+    <ul>
+      <li>黑底圆角方形，官方白色 invertocat（取自应用内 mark-github 矢量路径渲染）</li>
+      <li>猫脸两条竖向圆角槽 = 眼睛 = 插排插孔，代表「插件」版</li>
+      <li>应用名：<strong>GitHub Desktop X</strong>（菜单栏 / Info.plist 已验证）</li>
+    </ul>
+  </div>
+
+  <h2>验收门槛数据</h2>
+  <table>
+    <tr><th>门槛</th><th>标准</th><th>结果</th></tr>
+    <tr><td>启动零报错扫描</td><td>启动→加载仓库→全 tab，任何弹窗/console error/未捕获异常都算失败</td><td class="ok">CLEAN × 3 轮</td></tr>
+    <tr><td>录屏监控</td><td>录制全程边采边监（弹窗/console/异常）</td><td class="ok">PASS（本页视频即当次录制）</td></tr>
+    <tr><td>像素级 DOM 测量 · Changes List vs Tree</td><td>头部/按钮/输入框/复选行/叶子行逐元素 ≤ 0.5px</td><td class="ok">通过（残差仅行序与文件夹行，属功能本体）</td></tr>
+    <tr><td>像素级 DOM 测量 · Commits vs Changes</td><td>漏斗按钮 x=10/宽48/高25、输入框、容器 padding 5px 10px、caret svg×2</td><td class="ok">通过（全部 ≤ 0.5px）</td></tr>
+    <tr><td>功能断言</td><td>Commits 8 项筛选维度 + Tree 5 项交互 + 切 tab 状态持久化</td><td class="ok">18 项全绿</td></tr>
+    <tr><td>独立盲审（visual-judge agent）</td><td>像素级人工式盲审</td><td class="ok">13/13 pass</td></tr>
+    <tr><td>诚实披露</td><td>任何报错不得静默</td><td class="warn">一次瞬时 Chromium SSL stderr（对端关闭，不可复现、UI 无感知），已归因记录</td></tr>
+  </table>
+
+  <h2>架构要点（供人工复核）</h2>
+  <ul>
+    <li>上游仓库零功能改动：只含扩展点（patch 0001–0008 全部可审计，<code>patches/</code>）</li>
+    <li>Commits 筛选与 Changes Tree 视图均为<strong>运行时动态加载插件</strong>（<code>plugins/</code>，esbuild IIFE，经 IPC 下发 renderer eval）；删除插件目录即回到原生行为</li>
+    <li>插件 UI 复用宿主原生类名/组件（<code>.header .filter-field-row</code>、<code>ChangedFile</code>、<code>filter-popover</code>），保证与原生像素一致</li>
+    <li>源码位于本机 <code>~/github-desktop-x</code>：构建 <code>scripts/package-release.sh</code>、验收 <code>scripts/launch-error-scan.ts</code> / <code>scripts/gui/capture-evidence.js</code>、像素对比 <code>scripts/measure-*.ts</code></li>
+  </ul>
+
+  <p class="foot">本页由临时隧道托管，仅供本次远程验收使用，随时可撤。 · commit <code>f5a2e75</code> · 版本 3.6.6</p>
+</div>
+</body>
+</html>

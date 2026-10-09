@@ -2,7 +2,7 @@
  * 采集全套验收截图：History 基线 + Commits 各筛选维度 + 组合 + 详情 + 空态 + Changes List/Tree 双视图。
  * 产物落在 screenshots/ 下，编号与 docs/VERIFICATION.md 的证据清单对应。
  */
-const driver = require('/Users/yoko/dimple-github-desktop/scripts/gui/driver.js')
+const driver = require('/Users/yoko/github-desktop-x/scripts/gui/driver.js')
 
 async function waitListLoaded(page) {
   await page

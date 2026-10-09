@@ -2,10 +2,10 @@
 // filter row. The funnel button and the text field must match the native
 // Changes geometry; the commits input is wider only because it has no
 // List/Tree switch to its right.
-const { _electron } = require('/Users/yoko/dimple-github-desktop/workspace/node_modules/playwright')
+const { _electron } = require('/Users/yoko/github-desktop-x/workspace/node_modules/playwright')
 
 const APP = '/Applications/GitHub Desktop X.app/Contents/MacOS/GitHub Desktop X'
-const OUT = '/Users/yoko/dimple-github-desktop/screenshots'
+const OUT = '/Users/yoko/github-desktop-x/screenshots'
 
 async function measureChanges(page) {
   return page.evaluate(() => {
@@ -56,7 +56,7 @@ async function measureCommits(page) {
 ;(async () => {
   const app = await _electron.launch({
     executablePath: APP,
-    args: ['--cli-open=/Users/yoko/dimple-github-desktop/scripts/fixtures/demo-repo'],
+    args: ['--cli-open=/Users/yoko/github-desktop-x/scripts/fixtures/demo-repo'],
     env: {
       ...process.env,
       GIT_CONFIG_GLOBAL: '/tmp/gh3/.gitconfig',

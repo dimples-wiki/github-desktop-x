@@ -1,12 +1,12 @@
-# Homebrew Tap：dimple-github-desktop
+# Homebrew Tap：github-desktop-x
 
 让用户通过 Homebrew 一条命令安装带 Commits 筛选功能的 GitHub Desktop 二开版：
 
 ```bash
-brew tap OWNER/dimple-github-desktop https://github.com/OWNER/dimple-github-desktop
-brew install --cask dimple-github-desktop
+brew tap OWNER/github-desktop-x https://github.com/OWNER/github-desktop-x
+brew install --cask github-desktop-x
 # 未公证的本地构建建议：
-brew install --cask --no-quarantine dimple-github-desktop
+brew install --cask --no-quarantine github-desktop-x
 ```
 
 ## 本地验证（不发布到 GitHub 也能测）
@@ -20,7 +20,7 @@ brew tap-new --no-git local/dimple 2>/dev/null || true
 ln -s "$(pwd)/packaging/tap/Casks" "$(brew --repository)/Library/Taps/local/homebrew-dimple/Casks"
 
 # 3) 把 cask 里的 url 换成 file:// 本地路径后安装测试
-brew install --cask --no-quarantine local/dimple/dimple-github-desktop
+brew install --cask --no-quarantine local/dimple/github-desktop-x
 ```
 
 ## 与官方 GitHub Desktop 的共存设计

@@ -21,9 +21,9 @@
 不存在官方入口（F1），只能走 B 或 C，两者都达不到产品质量（见下）。**不可行。**
 
 ### ✅ 方案 A（推荐，已交付物料）：brew tap + cask 安装二开版
-- 形态：`brew tap <user>/dimple && brew install --cask dimple-github-desktop` —— 一条命令装机，与官方版**共存**（bundle 名 `GitHub Desktop Dimple`、协议头 `x-github-desktop-dev-auth`（dev 通道专用，不劫持官方的 `x-github-desktop-auth`）、更新检查静默不会被官方更新劫持）。
+- 形态：`brew tap <user>/dimple && brew install --cask github-desktop-x` —— 一条命令装机，与官方版**共存**（bundle 名 `GitHub Desktop Dimple`、协议头 `x-github-desktop-dev-auth`（dev 通道专用，不劫持官方的 `x-github-desktop-auth`）、更新检查静默不会被官方更新劫持）。
 - 依据：本仓库已跑通完整打包并**实机验证**——`dist/GitHub Desktop Dimple.app`（699MB，ad-hoc+hardened 签名，`codesign --verify --deep` 通过），直接启动打包二进制的 GUI 冒烟通过（Commits 标签页、message 筛选均正常，截图 `screenshots/14-packaged-app-smoke.png`）。
-- 物料：`scripts/package-release.sh`（一条命令产出发布 zip + sha256）、`packaging/tap/Casks/dimple-github-desktop.rb`（cask）、`packaging/README.md`（本地 tap 验证法 + 共存设计 + 公开发布清单）。
+- 物料：`scripts/package-release.sh`（一条命令产出发布 zip + sha256）、`packaging/tap/Casks/github-desktop-x.rb`（cask）、`packaging/README.md`（本地 tap 验证法 + 共存设计 + 公开发布清单）。
 - 代价：用户装的是**二开版本体**而非官方版的附件；官方版与二开版是两个并排的 app。
 - 公开发布的前置：需要 Apple Developer 签名 + 公证（否则用户需 `--no-quarantine`）；桌面应用用 GitHub Releases 托管 zip，cask 指向 release 下载。
 
