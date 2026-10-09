@@ -5,6 +5,12 @@
 <h1 align="center">GitHub Desktop X</h1>
 
 <p align="center">
+  <a href="https://github.com/dimples-wiki/github-desktop-x/releases/latest"><img src="https://img.shields.io/github/v/release/dimples-wiki/github-desktop-x?style=flat-square&color=black" alt="version"></a>
+  <img src="https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-black?style=flat-square" alt="platform">
+  <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="license">
+</p>
+
+<p align="center">
   GitHub Desktop（<a href="https://github.com/desktop/desktop">desktop/desktop</a>）的二开版：<br>
   动态插件架构 —— 上游只含扩展点，功能全部以运行时插件交付。
 </p>
