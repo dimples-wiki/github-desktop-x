@@ -1,67 +1,68 @@
-# github-desktop-x
+<p align="center">
+  <img src="packaging/icon/app-icon-1024.png" width="120" alt="GitHub Desktop X">
+</p>
 
-GitHub Desktop（[desktop/desktop](https://github.com/desktop/desktop)）的二开项目：
-在 History 旁新增 **Commits** 标签页——复用原生提交列表，支持按 **提交人 / message 模糊搜索 / 描述 / 时间范围** 筛选（范围天然限定为当前选中分支）。
+<h1 align="center">GitHub Desktop X</h1>
 
-采用 **git submodule + 最小胶水补丁 + 独立功能模块** 架构，官方升级时只需维护胶水层。
+<p align="center">
+  GitHub Desktop（<a href="https://github.com/desktop/desktop">desktop/desktop</a>）的二开版：<br>
+  动态插件架构 —— 上游只含扩展点，功能全部以运行时插件交付。
+</p>
+
+## 安装
+
+```bash
+brew tap dimples-wiki/githubx
+brew install --cask githubx
+```
+
+> 未签名的本地构建建议 `brew install --cask --no-quarantine githubx`。
+> 也可一行直装（自动 tap）：`brew install --cask dimples-wiki/githubx/githubx`。
+
+要求：macOS Monterey 及以上 · Apple Silicon。与官方 GitHub Desktop 可共存（应用名、userData、OAuth 协议头均隔离）。
+
+## 这是什么
+
+在原生体验之上新增两个**运行时插件**（删除插件目录即回到原生行为）：
+
+- **Commits 标签页** —— 复用原生提交列表，支持按提交人 / message 模糊 / 描述正文 / 时间范围筛选，跨 tab 筛选状态保留
+- **Changes Tree 视图** —— 文件列表的目录树形态，折叠/展开、树内筛选；List ↔ Tree 图标一键切换，与原生列表像素级一致
+
+两项能力均通过独立盲测（visual-judge 13/13）+ 像素级 DOM 测量（与原生 ≤0.5px）+ 启动零报错门槛。
+
+## 架构
 
 ```
-upstream/      git submodule：desktop/desktop @ release-3.6.6
-feature/       自有功能模块（全部为新增文件）
-patches/       胶水补丁序列（5 个，净 +90 行，全部注册/接线性质）
-scripts/       组装 / 补丁导出 / 夹具仓库 / GUI 驱动
-docs/          PLAN（方案）· PROGRESS（进度）· VERIFICATION（验收记录）
-screenshots/   实机运行截图（功能证据）
+upstream/      git submodule：desktop/desktop @ release-3.6.6（零功能改动）
+framework/     扩展点：tab 注册、Changes 文件视图插槽、插件加载器（新文件）
+patches/       胶水补丁（0001–0008，全部接线/注册性质，可审计）
+plugins/       动态插件源码（commits-filter、changes-tree，esbuild IIFE）
+scripts/       组装 / 发布 / 验收（像素测量、启动零报错扫描、录屏、GUI 驱动）
+docs/          PLAN · PROGRESS · VERIFICATION（16+ 轮验收记录）
 workspace/     组装产物（gitignore，不入库）
 ```
 
-## 快速上手
+工作方式：`assemble.sh` 用上游树 + 补丁 + framework 组装出可构建的 workspace →
+插件经 esbuild 打包后由主进程扫描、IPC 下发、renderer eval 注册 ——
+**上游不感知插件，官方升级只需维护胶水层**。
+
+## 从源码构建
 
 ```bash
-# 0) 工具链（node 24 + yarn 1.22，无需 sudo）
-source /Users/yoko/.local/dimple-env.sh
-
-# 1) 组装 workspace（上游树 + 胶水补丁 + 功能模块；幂等，保留已装依赖）
-./scripts/assemble.sh
-
-# 2) 安装依赖（首次较慢；yarn 会装两层：根 + app/）
-cd workspace && yarn install
-
-# 3) 构建（与上游 e2e 相同的免打包产物，出口 workspace/out）
-DESKTOP_SKIP_PACKAGE=1 DESKTOP_E2E=1 \
-DESKTOP_E2E_UPDATES_URL=http://127.0.0.1:9/update \
-NODE_ENV=production RELEASE_CHANNEL=production yarn build:prod
-
-# 4) GUI 冒烟（playwright 驱动 Electron，自动打开 demo 仓库）
-node ../scripts/gui/driver.js smoke
-
-# 单元测试（过滤纯逻辑，18 个用例）
-yarn test:unit app/test/unit/commits-filter-logic-test.ts
+source ~/.local/github-desktop-x-env.sh   # node 24 + yarn 1.22（自备）
+./scripts/assemble.sh                     # 组装 workspace（幂等）
+cd workspace && yarn install              # 首次较慢
+DESKTOP_SKIP_PACKAGE=1 NODE_ENV=production RELEASE_CHANNEL=production yarn build:prod
+./scripts/package-release.sh              # 产出 zip + 自动钉 sha256 进 cask
 ```
 
-## 日常开发流
+## 验收
 
-- **改功能代码**：编辑 `feature/commits-filter/...` → `./scripts/assemble.sh` → 构建。
-- **改胶水**：在 workspace 里改上游文件（或改 `scripts/apply-glue.py` 后执行）→
-  `./scripts/export-patches.sh` 重新导出补丁 → 提交父仓库。
-- **官方升级**：
-  ```bash
-  git -C upstream fetch --depth 1 origin refs/tags/release-X.Y.Z:refs/tags/release-X.Y.Z
-  git -C upstream checkout --detach release-X.Y.Z
-  git -C upstream submodule update --init
-  ./scripts/assemble.sh     # 补丁冲突会在这里暴露，修复后 export-patches 重导
-  ```
-- **测试夹具**：`./scripts/make-fixture-repo.sh`（34 提交 / 4 作者 / 多行正文 / 特性分支）。
+- 功能：GUI 自动化断言 18 项全绿（`scripts/gui/capture-evidence.js`）
+- 像素：List vs Tree、Commits vs Changes 逐元素 ≤0.5px（`scripts/measure-*.ts`）
+- 启动：零报错扫描 + 录屏（`scripts/launch-error-scan.ts` / `launch-recording.ts`）
+- 详见 [docs/VERIFICATION.md](docs/VERIFICATION.md)
 
-## 本机安装状态（2026-10-08）
+## License
 
-二开版已打包并安装：**/Applications/GitHub Desktop X.app**（678MB，ad-hoc 签名）。
-- 首次启动走官方首启流程（欢迎页 → 本地仓库），`--cli-open` 的 demo 仓库已加入
-- 两个动态插件已预装：`~/Library/Application Support/GitHub Desktop X/plugins/`（commits-filter + changes-tree）
-- 与官方版可共存；删除应用即卸载，插件目录一并删除即完全清理
-
-## 文档
-
-- [docs/PLAN.md](docs/PLAN.md) — 架构方案、插入点、验收标准
-- [docs/PROGRESS.md](docs/PROGRESS.md) — 进度与关键决策（含踩坑记录）
-- [docs/VERIFICATION.md](docs/VERIFICATION.md) — 三维盲测验收记录与截图清单
+MIT（跟随上游）。GitHub Desktop 是 GitHub, Inc. 的商标，本项目与其无隶属关系。

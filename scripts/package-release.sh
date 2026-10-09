@@ -48,6 +48,7 @@ if [ -f "$CASK" ]; then
   sed -i '' -E 's|sha256 :no_check|sha256 "'"$SHA"'"|; s|sha256 "[0-9a-f]{64}"|sha256 "'"$SHA"'"|' "$CASK"
   sed -i '' -E 's|version "[^"]+"|version "'"$VERSION"'"|' "$CASK"
   echo "[release] cask 已更新：$CASK"
+  "$ROOT/scripts/publish-tap.sh" || true
 fi
 echo "================= 发布物料 ================="
 echo "zip:  $ZIP"
