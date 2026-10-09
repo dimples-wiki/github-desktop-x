@@ -5,3 +5,4 @@ node_modules/
 .runtime/
 screenshots/
 scripts/fixtures/
+dist-release/

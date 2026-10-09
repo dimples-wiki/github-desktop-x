@@ -188,24 +188,27 @@ async function openChanges(page) {
 
 // ── 筛选操作（Commits 标签页） ─────────────────────────────────────
 
-/** 展开高级筛选（description/author/dates 默认折叠） */
+/** 高级筛选弹层的开关按钮（漏斗按钮，与 Changes 筛选一致） */
+function commitsFilterButton(page) {
+  return page.locator('.filter-box-container .filter-button').first()
+}
+
+/** 展开高级筛选（description/author/dates 在弹层中，默认收起） */
 async function expandFilters(page) {
-  const expanded = await page
-    .locator('.commits-filter-toggle')
-    .getAttribute('aria-expanded')
+  const btn = commitsFilterButton(page)
+  const expanded = await btn.getAttribute('aria-expanded')
   if (expanded !== 'true') {
-    await page.click('.commits-filter-toggle')
+    await btn.click()
     await page.waitForTimeout(200)
   }
 }
 
 /** 收起高级筛选 */
 async function collapseFilters(page) {
-  const expanded = await page
-    .locator('.commits-filter-toggle')
-    .getAttribute('aria-expanded')
+  const btn = commitsFilterButton(page)
+  const expanded = await btn.getAttribute('aria-expanded')
   if (expanded === 'true') {
-    await page.click('.commits-filter-toggle')
+    await btn.click()
     await page.waitForTimeout(200)
   }
 }
@@ -237,7 +240,10 @@ async function setDateRangeFilter(page, from, to) {
 }
 
 async function clearFilters(page) {
-  await page.click('.commits-filter-clear-button')
+  await expandFilters(page)
+  await page.click('.filter-popover .filter-options-footer button')
+  await collapseFilters(page)
+  await page.waitForTimeout(200)
 }
 
 // ── 读取状态 ───────────────────────────────────────────────────────

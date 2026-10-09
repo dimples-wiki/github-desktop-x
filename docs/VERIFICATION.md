@@ -351,3 +351,38 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 
 从 /Applications 安装位置启动的应用中，Commits 筛选和 Changes Tree 视图均正常工作。
 用户截图确认了 include-all 位置、状态徽标着色、叶子 basename 显示均与原生一致。
+
+# 第十五轮：像素级 DOM 测量校准（2026-10-09）
+
+用户验收标准升级为「像素级校对」。本轮不再目测截图，而是用 Playwright 读取真实 DOM 的
+`getBoundingClientRect()` + computed style，对 List（原生）与 Tree（插件）两种视图做逐元素数值对比。
+测量脚本：`scripts/measure-header.ts`（960×660 与默认窗宽各跑一轮）。
+
+## 首轮测量暴露的结构性差异（全部修复）
+
+| 元素 | 原生 | 插件（修前） | 根因与修法 |
+| --- | --- | --- | --- |
+| 头部容器 padding/背景 | `5px 10px` + `--box-alt-background-color` | `5px`、无背景 | 原生样式全部挂在 `.changes-list-container .header` 作用域下；插件头部改用原生类名 `header filter-field-row`，让宿主级联自动生效 |
+| 漏斗按钮 | `padding: 0 5px 0 10px`、`justify-content: space-between`、**triangleDown** caret | `0 10px`、chevronDown | 同上（类名复用）；caret 图标改为原生同款 `octicons.triangleDown` |
+| 按钮包裹 | `<span>` 包按钮+popover | 无包裹 | 补 `<span>`，与原生 DOM 同构 |
+| Filter 输入框 | `displayClearButton`（右 padding 25px） | 无清除按钮 | TextBox 加 `displayClearButton={true}` |
+| include-all 行 | `.checkbox-container` 无 padding、checkbox `flex-grow:1`、input 右距 7px | 自造 padding、类名不同 | 改用原生 `changes-list-check-all` 类名并移入 header 内 |
+| include-all 文案 | 筛选时 "N of M changed files" | 恒为总数 | 镜像原生逻辑 |
+| 叶子行缩进 | checkbox x=10 | x=18（8px 缩进+10px 占位叠加） | 删除多余缩进/占位（`.file-list .file` 的 10px 由宿主提供），`paddingLeft=depth*14` |
+| 状态筛选弹层 | `filter-popover` 类 + 语义化 toggle（不读 event） | 自造类 + 读 `event.currentTarget` | 弹层改用原生 `filter-popover`/`filter-options` 类；**currentTarget 在 React 16 portal 内为 null**（react#11972），照原生改为语义 toggle + 勾选/清除后自动收起 |
+| 选中高亮 | 点击行 → 行持有焦点 → focus-within 激活色 | 无焦点管理，选中色恒为失焦色 | 容器补 focus-within 追踪（React onFocus/onBlur），行 `tabIndex={-1}` + 点击 `focus()`；宿主新增 `selectedFiles` 透传（patch 0004） |
+
+## 测量结果（修复后）
+
+- 头部全部元素（headerRow / filterBox / 按钮 / 输入框 / 切换开关 / checkbox 行）：两视图 **≤0.5px**
+- 960 窄窗专项：修复前切换图标被输入框 min-width 溢出顶到贴边（+16px）；补
+  `.changes-tree .filter-field-row .filter-list-filter-field { min-width: 0 }`（镜像原生 `.filter-list` 作用域的同款规则）后清零
+- 叶子行内部：checkbox/文件名/状态徽标坐标与原生一致（根级文件 x=10 与原生完全相同）
+- 残差仅两项且属预期：行顺序（Tree 文件夹优先）、文件夹行（原生无对应物）
+
+## 独立盲审（visual-judge，两轮）
+
+- 第一轮 9/12 fail → 定位出图标贴边（真缺陷）、弹层 footer 误判（原生即无筛选不显示）、选中色对比口径错误（失焦基线 vs 聚焦态）
+- 第二轮：图标贴边修复像素级确认；选中色经原生对照实证 —— 原生 List 点击选中同为
+  `rgb(3,102,214)`（浅色主题焦点态选中色，见 20b-list-clicked-selected.png），与 Tree 完全一致
+- 全套功能断言同时全绿：Commits 8 项筛选维度 + Tree 选中/折叠/文本筛选/状态筛选/全选切换

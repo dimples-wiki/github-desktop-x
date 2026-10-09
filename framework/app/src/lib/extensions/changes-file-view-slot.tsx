@@ -37,6 +37,9 @@ interface IChangesFileViewSlotProps {
 
   /** Host callback setting inclusion for every file at once. */
   readonly onIncludeAllChanged: (include: boolean) => void
+
+  /** The currently selected changed files (for row highlight parity). */
+  readonly selectedFiles: ReadonlyArray<any>
 }
 
 interface IChangesFileViewSlotState {
@@ -138,6 +141,7 @@ export class ChangesFileViewSlot extends React.Component<
         onIncludeChanged={this.props.onIncludeChanged}
         includeAllValue={this.props.includeAllValue}
         onIncludeAllChanged={this.props.onIncludeAllChanged}
+        selectedFiles={this.props.selectedFiles}
       />
     )
   }
@@ -168,22 +172,5 @@ const slotCss = `
   flex-direction: column;
   flex: 1;
   min-height: 0;
-}
-
-.changes-view-slot .filter-box-container {
-  display: flex;
-  align-items: center;
-  background: var(--box-alt-background-color);
-  padding: var(--spacing-half);
-  border-bottom: var(--base-border);
-  margin-bottom: 0;
-}
-
-.changes-view-slot .filter-box-container input {
-  border-radius: 0 var(--border-radius) var(--border-radius) 0;
-}
-
-.changes-view-slot .filter-list-filter-field {
-  flex: 1;
 }
 `

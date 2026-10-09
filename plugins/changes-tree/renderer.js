@@ -76,103 +76,32 @@
     return true;
   }
   var treeCss = `
-.changes-tree-header-row {
-  display: flex;
-  flex-direction: column;
-  padding: var(--spacing-half);
-  border-bottom: var(--base-border);
-}
-
-.changes-tree-header-row .filter-box-container {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-half);
-}
-
-.changes-tree-header-row .filter-box-container .filter-button {
-  flex: initial;
-}
-
-.changes-tree-header-row .filter-box-container .commits-filter-field,
-.changes-tree-header-row .filter-box-container .filter-list-filter-field {
-  flex: 1;
-  min-width: 0;
-}
-
-.changes-tree-header-row .checkbox-container {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-half) 0 0;
-}
-
-.changes-tree .filter-box-container {
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-.changes-tree .filter-box-container input {
-  border-radius: 0 var(--border-radius) var(--border-radius) 0;
-}
-
-.changes-tree .filter-button {
-  border-radius: var(--border-radius) 0 0 var(--border-radius);
-  border-right: none;
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-color);
-  display: inline-flex;
-  align-items: center;
-  position: relative;
-}
-
-.changes-tree .filter-button.active span:first-child {
-  color: var(--box-selected-active-background-color);
-}
-
-.changes-tree .filter-button .active-badge {
-  position: absolute;
-  right: 18px;
-  top: 4px;
-}
-
-.changes-tree .filter-button .active-badge .badge-bg {
-  padding: 1px;
-  border-radius: 50%;
-  background-color: var(--secondary-button-background);
-}
-
-.changes-tree .filter-button .active-badge .badge {
-  width: 5px;
-  height: 5px;
-  background-color: var(--box-selected-active-background-color);
-  border-radius: 50%;
-}
-
-.changes-tree-header {
-  padding: var(--spacing-half) var(--spacing);
-  border-bottom: var(--base-border);
-}
-
-.changes-tree-header .checkbox-component {
-  display: flex;
-}
-
 .changes-tree {
   flex: 1;
   overflow-y: auto;
   user-select: none;
 }
 
+/* The filter row and the include-all header reuse the native
+   .header.filter-field-row classes, so every host style
+   (.changes-list-container .header ...) applies unchanged and both
+   views stay pixel-identical. The one rule the native cascade carries
+   in a scope the tree does not share (.filter-list ...) is repeated
+   here: the filter field must be shrinkable, or narrow sidebars
+   overflow and push the view switch against the panel edge. */
+.changes-tree .filter-field-row .filter-list-filter-field {
+  min-width: 0;
+}
+
 .changes-tree-row {
   display: flex;
   align-items: center;
   height: 29px;
-  padding-right: var(--spacing, 8px);
   cursor: default;
 }
 
-.changes-tree-row:hover {
-  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.04));
+.changes-tree-row.folder {
+  padding-right: var(--spacing);
 }
 
 .changes-tree-row .tree-caret {
@@ -183,115 +112,18 @@
   fill: var(--text-secondary-color);
 }
 
-.changes-tree-row .tree-indent {
-  width: 10px;
-  flex: initial;
-}
-
 .changes-tree-row .tree-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--font-size, 12px);
+  font-size: var(--font-size);
   color: var(--text-secondary-color);
 }
 
 .changes-tree-row .tree-count {
   margin-left: auto;
   color: var(--text-secondary-color);
-  font-size: var(--font-size-sm, 11px);
-}
-
-.changes-view-slot .filter-box-container input {
-  border-radius: 0 var(--border-radius) var(--border-radius) 0;
-}
-
-.commits-tree-filter-popover {
-  text-align: left;
-  min-width: 240px;
-}
-
-.commits-tree-filter-popover .popover-content {
-  padding: var(--spacing);
-}
-
-.commits-tree-filter-popover .filter-popover-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing);
-}
-
-.commits-tree-filter-popover .filter-popover-header h3 {
-  margin: 0;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-}
-
-.commits-tree-filter-popover .close {
-  flex-shrink: 0;
-  border: 0;
-  height: 16px;
-  width: 16px;
-  padding: 0;
-  background: transparent;
-  color: var(--text-secondary-color);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-}
-
-.commits-tree-filter-popover .close .octicon {
-  pointer-events: none;
-}
-
-.commits-tree-filter-popover .close:hover {
-  color: var(--text-color);
-}
-
-.commits-tree-filter-popover .filter-options {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-half);
-  margin: 0;
-}
-
-.commits-tree-filter-popover .filter-options-footer {
-  border-top: var(--base-border);
-  padding-top: var(--spacing-half);
-  margin-top: var(--spacing-half);
-  text-align: left;
-}
-
-.commits-tree-filter-popover .button-component {
-  min-width: 60px;
-}
-
-.commits-commit-list .commits-filter-empty {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: var(--spacing-half);
-  padding: var(--spacing); max-width: 260px;
-}
-
-.commits-commit-list .commits-filter-empty .commits-filter-empty-icon.octicon {
-  width: 32px; height: 32px;
-  fill: var(--text-secondary-color); opacity: 0.6;
-}
-
-.commits-commit-list .commits-filter-empty h2 {
-  margin: 0; font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold); color: var(--text-color);
-}
-
-.commits-commit-list .commits-filter-empty p {
-  margin: 0; color: var(--text-secondary-color);
   font-size: var(--font-size-sm);
-}
-
-.commits-commit-list .commits-filter-empty .commits-filter-empty-action {
-  margin-top: var(--spacing-half);
 }
 `;
   function styleInjection() {
@@ -374,9 +206,16 @@
         collapsedFolders: /* @__PURE__ */ new Set(),
         filterText: "",
         statusFilters: NoStatusFilters,
-        isFilterOptionsOpen: false
+        isFilterOptionsOpen: false,
+        focusWithin: false
       };
     }
+    // Mirrors the host's FocusContainer: selected rows must use the
+    // active (--box-selected-active-*) palette while the list holds
+    // keyboard focus, exactly like the built-in list.
+    onFocusWithinChanged = (focusWithin) => {
+      this.setState({ focusWithin });
+    };
     toggleFolder = (path) => {
       this.setState((prevState) => {
         const collapsedFolders = new Set(prevState.collapsedFolders);
@@ -399,16 +238,23 @@
     closeFilterOptions = () => {
       this.setState({ isFilterOptionsOpen: false });
     };
-    onStatusFilterChanged = (key) => (event) => {
+    // Same pattern as the host's ChangesListFilterOptions: semantic toggle,
+    // no event reads (currentTarget is null inside the popover portal on
+    // React 16). Native also closes the popover after each toggle.
+    onStatusFilterChanged = (key) => () => {
       this.setState((prevState) => ({
         statusFilters: {
           ...prevState.statusFilters,
-          [key]: event.currentTarget.checked
-        }
+          [key]: !prevState.statusFilters[key]
+        },
+        isFilterOptionsOpen: false
       }));
     };
     clearStatusFilters = () => {
-      this.setState({ statusFilters: NoStatusFilters });
+      this.setState({
+        statusFilters: NoStatusFilters,
+        isFilterOptionsOpen: false
+      });
     };
     renderFilterPopover(files) {
       const filters = this.state.statusFilters;
@@ -426,7 +272,7 @@
       return /* @__PURE__ */ React.createElement(
         Popover,
         {
-          className: "filter-popover commits-tree-filter-popover",
+          className: "filter-popover",
           ariaLabelledby: "changes-tree-filter-header",
           anchor: this.filterButtonRef,
           anchorPosition: PopoverAnchorPosition.BottomRight,
@@ -443,15 +289,32 @@
           },
           /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.x })
         )),
-        /* @__PURE__ */ React.createElement("div", { className: "commits-tree-filter-options" }, checkboxRow("isIncludedInCommit", "Included in commit", counts.included), checkboxRow("isExcludedFromCommit", "Excluded from commit", counts.excluded), checkboxRow("isNewFile", "New files", counts.newFiles), checkboxRow("isModifiedFile", "Modified files", counts.modifiedFiles), checkboxRow("isDeletedFile", "Deleted files", counts.deletedFiles)),
+        /* @__PURE__ */ React.createElement("div", { className: "filter-options" }, checkboxRow(
+          "isIncludedInCommit",
+          "Included in commit",
+          counts.included
+        ), checkboxRow(
+          "isExcludedFromCommit",
+          "Excluded from commit",
+          counts.excluded
+        ), checkboxRow("isNewFile", "New files", counts.newFiles), checkboxRow(
+          "isModifiedFile",
+          "Modified files",
+          counts.modifiedFiles
+        ), checkboxRow("isDeletedFile", "Deleted files", counts.deletedFiles)),
         activeCount > 0 ? /* @__PURE__ */ React.createElement("div", { className: "filter-options-footer" }, /* @__PURE__ */ React.createElement(Button, { onClick: this.clearStatusFilters }, "Clear filters")) : null
       );
     }
     render() {
-      const { files, availableWidth, includeAllValue, onIncludeAllChanged } = this.props;
+      const {
+        files,
+        availableWidth,
+        includeAllValue,
+        onIncludeAllChanged,
+        selectedFiles
+      } = this.props;
       const filterText = this.state.filterText.trim().toLowerCase();
       const statusFilters = this.state.statusFilters;
-      const statusActive = Object.values(statusFilters).some(Boolean);
       const visibleFiles = files.filter((file) => {
         if (filterText.length > 0 && !file.path.toLowerCase().includes(filterText)) {
           return false;
@@ -461,83 +324,110 @@
       const tree = buildTree(visibleFiles);
       const rows = [];
       flattenTree(tree, this.state.collapsedFolders, 0, rows);
-      const counts = countStatuses(files);
       const activeCount = Object.values(statusFilters).filter(Boolean).length;
-      return /* @__PURE__ */ React.createElement("div", { className: "file-list" }, /* @__PURE__ */ React.createElement("div", { className: "list-focus-container" }, /* @__PURE__ */ React.createElement("div", { className: "changes-tree" }, styleInjection(), /* @__PURE__ */ React.createElement("div", { className: "changes-tree-header-row", style: { display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("div", { className: "filter-box-container" }, /* @__PURE__ */ React.createElement(
-        "button",
+      const selectedKeys = /* @__PURE__ */ new Set();
+      for (const f of selectedFiles ?? []) {
+        if (f?.change?.path !== void 0) {
+          selectedKeys.add(String(f.change.path));
+        }
+        if (f?.path !== void 0) {
+          selectedKeys.add(String(f.path));
+        }
+      }
+      const checkAllLabel = visibleFiles.length !== files.length ? `${visibleFiles.length} of ${files.length} changed files` : `${files.length} changed file${files.length === 1 ? "" : "s"}`;
+      return /* @__PURE__ */ React.createElement("div", { className: "file-list" }, /* @__PURE__ */ React.createElement(
+        "div",
         {
-          className: `button-component filter-button${activeCount > 0 ? " active" : ""}`,
-          onClick: this.toggleFilterOptionsOpen,
-          ariaExpanded: this.state.isFilterOptionsOpen,
-          onButtonRef: (ref) => this.filterButtonRef = ref,
-          title: "Filter Options",
-          ariaLabel: "Filter Options"
+          className: `list-focus-container${this.state.focusWithin ? " focus-within" : ""}`,
+          onFocus: () => this.onFocusWithinChanged(true),
+          onBlur: () => this.onFocusWithinChanged(false)
         },
-        /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.filter })),
-        /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.chevronDown }),
-        activeCount > 0 ? /* @__PURE__ */ React.createElement("span", { className: "active-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-bg" }, /* @__PURE__ */ React.createElement("div", { className: "badge" }))) : null
-      ), /* @__PURE__ */ React.createElement(
-        TextBox,
-        {
-          value: this.state.filterText,
-          placeholder: "Filter",
-          className: "filter-list-filter-field",
-          onValueChanged: this.onFilterTextChanged
-        }
-      ), this.props.viewSwitch), this.state.isFilterOptionsOpen ? this.renderFilterPopover(files) : null), /* @__PURE__ */ React.createElement("div", { className: "checkbox-container", style: { display: "flex", alignItems: "center", padding: "var(--spacing-half) var(--spacing-half) 0" } }, /* @__PURE__ */ React.createElement(
-        Checkbox,
-        {
-          value: includeAllValue,
-          onChange: (event) => onIncludeAllChanged(event.currentTarget.checked),
-          ariaLabel: "Include all changed files",
-          className: "changes-tree-check-all",
-          label: `${files.length} changed file${files.length === 1 ? "" : "s"}`
-        }
-      )), rows.map((row) => {
-        const isFolder = row.file === void 0;
-        const include = !isFolder && row.file.selection.getSelectionType() === DiffSelectionType.All;
-        return /* @__PURE__ */ React.createElement(
-          "div",
+        /* @__PURE__ */ React.createElement("div", { className: "changes-tree" }, styleInjection(), /* @__PURE__ */ React.createElement("div", { className: "header filter-field-row" }, /* @__PURE__ */ React.createElement("div", { className: "filter-box-container" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(
+          "button",
           {
-            key: row.path,
-            className: `changes-tree-row list-item${include ? " included" : ""}`,
-            style: { paddingLeft: 8 + row.depth * 14 },
-            onClick: () => {
-              if (isFolder) {
-                this.toggleFolder(row.path);
-              } else {
-                this.props.onSelectionChanged([row.file]);
-              }
-            },
-            onContextMenu: isFolder ? void 0 : (event) => {
-              event.preventDefault();
-              this.props.onFileContextMenu(row.file, event);
-            },
-            title: row.path
+            className: `button-component filter-button${activeCount > 0 ? " active" : ""}`,
+            onClick: this.toggleFilterOptionsOpen,
+            "aria-expanded": this.state.isFilterOptionsOpen,
+            ref: (ref) => this.filterButtonRef = ref,
+            title: "Filter Options",
+            "aria-label": "Filter Options"
           },
-          isFolder ? /* @__PURE__ */ React.createElement(
-            TreeCaret,
+          /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.filter })),
+          activeCount > 0 ? /* @__PURE__ */ React.createElement("span", { className: "active-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-bg" }, /* @__PURE__ */ React.createElement("div", { className: "badge" }))) : null,
+          /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons.triangleDown })
+        ), this.state.isFilterOptionsOpen ? this.renderFilterPopover(files) : null), /* @__PURE__ */ React.createElement(
+          TextBox,
+          {
+            value: this.state.filterText,
+            placeholder: "Filter",
+            className: "filter-list-filter-field",
+            displayClearButton: true,
+            onValueChanged: this.onFilterTextChanged
+          }
+        ), this.props.viewSwitch), /* @__PURE__ */ React.createElement("div", { className: "checkbox-container" }, /* @__PURE__ */ React.createElement(
+          Checkbox,
+          {
+            value: includeAllValue,
+            onChange: (event) => {
+              const source = event?.currentTarget ?? event?.target;
+              onIncludeAllChanged(
+                source?.checked ?? !(includeAllValue === CheckboxValue.On)
+              );
+            },
+            className: "changes-list-check-all",
+            label: checkAllLabel
+          }
+        ))), rows.map((row) => {
+          const isFolder = row.file === void 0;
+          const include = !isFolder && row.file.selection.getSelectionType() === DiffSelectionType.All;
+          const selected = !isFolder && selectedKeys.has(String(row.file.path));
+          return /* @__PURE__ */ React.createElement(
+            "div",
             {
-              expanded: !this.state.collapsedFolders.has(row.path)
-            }
-          ) : /* @__PURE__ */ React.createElement("span", { className: "tree-indent", "aria-hidden": "true" }),
-          isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-name" }, row.name) : /* @__PURE__ */ React.createElement(
-            ChangedFile,
-            {
-              file: { ...row.file, path: row.name },
-              include,
-              availableWidth: Math.max(
-                140,
-                (availableWidth ?? 340) - 24 - row.depth * 14
-              ),
-              disableSelection: false,
-              focused: false,
-              onIncludeChanged: (f, inc) => this.props.onIncludeChanged(row.file, inc)
-            }
-          ),
-          isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
-        );
-      }))));
+              key: row.path,
+              className: `changes-tree-row list-item${isFolder ? " folder" : ""}${include ? " included" : ""}${selected ? " selected" : ""}`,
+              style: {
+                paddingLeft: isFolder ? 10 + row.depth * 14 : row.depth * 14
+              },
+              tabIndex: -1,
+              onClick: (event) => {
+                event.currentTarget.focus();
+                if (isFolder) {
+                  this.toggleFolder(row.path);
+                } else {
+                  this.props.onSelectionChanged([row.file]);
+                }
+              },
+              onContextMenu: isFolder ? void 0 : (event) => {
+                event.preventDefault();
+                this.props.onFileContextMenu(row.file, event);
+              },
+              title: row.path
+            },
+            isFolder ? /* @__PURE__ */ React.createElement(
+              TreeCaret,
+              {
+                expanded: !this.state.collapsedFolders.has(row.path)
+              }
+            ) : null,
+            isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-name" }, row.name) : /* @__PURE__ */ React.createElement(
+              ChangedFile,
+              {
+                file: { ...row.file, path: row.name },
+                include,
+                availableWidth: Math.max(
+                  140,
+                  (availableWidth ?? 340) - row.depth * 14
+                ),
+                disableSelection: false,
+                focused: false,
+                onIncludeChanged: (f, inc) => this.props.onIncludeChanged(row.file, inc)
+              }
+            ),
+            isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
+          );
+        }), rows.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "no-changes-filtered" }, /* @__PURE__ */ React.createElement("div", { className: "title" }, "No files match your current filters")) : null)
+      ));
     }
   };
   globalThis.__GHD_EXTENSION_API__.registerChangesFileView({
