@@ -198,16 +198,35 @@
       /* @__PURE__ */ React.createElement("path", { d: path })
     );
   }
+  var persistedTreeState = null;
+  var persistedTreeRepoId = void 0;
   var ChangesTreeView = class extends React.Component {
     filterButtonRef = null;
     constructor(props) {
       super(props);
+      const repoId = props.repository?.id;
+      if (persistedTreeState === null || persistedTreeRepoId !== repoId) {
+        persistedTreeRepoId = repoId;
+        persistedTreeState = {
+          collapsedFolders: /* @__PURE__ */ new Set(),
+          filterText: "",
+          statusFilters: NoStatusFilters
+        };
+      }
       this.state = {
-        collapsedFolders: /* @__PURE__ */ new Set(),
-        filterText: "",
-        statusFilters: NoStatusFilters,
+        collapsedFolders: persistedTreeState.collapsedFolders,
+        filterText: persistedTreeState.filterText,
+        statusFilters: persistedTreeState.statusFilters,
         isFilterOptionsOpen: false,
         focusWithin: false
+      };
+    }
+    /** Persists the persistable slice after every relevant update. */
+    persistState(state) {
+      persistedTreeState = {
+        collapsedFolders: state.collapsedFolders,
+        filterText: state.filterText,
+        statusFilters: state.statusFilters
       };
     }
     // Mirrors the host's FocusContainer: selected rows must use the
@@ -224,11 +243,17 @@
         } else {
           collapsedFolders.add(path);
         }
-        return { collapsedFolders };
+        const next = { collapsedFolders };
+        this.persistState({ ...prevState, ...next });
+        return next;
       });
     };
     onFilterTextChanged = (value) => {
-      this.setState({ filterText: value });
+      this.setState((prevState) => {
+        const next = { filterText: value };
+        this.persistState({ ...prevState, ...next });
+        return next;
+      });
     };
     toggleFilterOptionsOpen = () => {
       this.setState((prevState) => ({
@@ -242,18 +267,26 @@
     // no event reads (currentTarget is null inside the popover portal on
     // React 16). Native also closes the popover after each toggle.
     onStatusFilterChanged = (key) => () => {
-      this.setState((prevState) => ({
-        statusFilters: {
-          ...prevState.statusFilters,
-          [key]: !prevState.statusFilters[key]
-        },
-        isFilterOptionsOpen: false
-      }));
+      this.setState((prevState) => {
+        const next = {
+          statusFilters: {
+            ...prevState.statusFilters,
+            [key]: !prevState.statusFilters[key]
+          },
+          isFilterOptionsOpen: false
+        };
+        this.persistState({ ...prevState, ...next });
+        return next;
+      });
     };
     clearStatusFilters = () => {
-      this.setState({
-        statusFilters: NoStatusFilters,
-        isFilterOptionsOpen: false
+      this.setState((prevState) => {
+        const next = {
+          statusFilters: NoStatusFilters,
+          isFilterOptionsOpen: false
+        };
+        this.persistState({ ...prevState, ...next });
+        return next;
       });
     };
     renderFilterPopover(files) {

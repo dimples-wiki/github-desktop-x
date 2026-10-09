@@ -25,11 +25,13 @@ const css = `
 
 /* ── Filter bar: joined filter-options button + message search box ── */
 
+/* Same paddings as the native .header: 5px vertical / 10px horizontal,
+   so the funnel sits at the same x as the Changes filter row. */
 #commits-view .filter-box-container {
   display: flex;
   align-items: center;
   background: var(--box-alt-background-color);
-  padding: var(--spacing-half);
+  padding: var(--spacing-half) var(--spacing);
   border-bottom: var(--base-border);
   margin-bottom: 0;
 }
@@ -122,7 +124,7 @@ const css = `
   flex-direction: row;
   align-items: center;
   background: var(--box-alt-background-color);
-  padding: 0 var(--spacing-half) var(--spacing-half);
+  padding: 0 var(--spacing) var(--spacing-half);
 }
 
 #commits-view .commits-filter-summary .commits-filter-count {

@@ -40,6 +40,9 @@ interface IChangesFileViewSlotProps {
 
   /** The currently selected changed files (for row highlight parity). */
   readonly selectedFiles: ReadonlyArray<any>
+
+  /** The current repository (lets plugins scope persisted state). */
+  readonly repository: any
 }
 
 interface IChangesFileViewSlotState {
@@ -142,6 +145,7 @@ export class ChangesFileViewSlot extends React.Component<
         includeAllValue={this.props.includeAllValue}
         onIncludeAllChanged={this.props.onIncludeAllChanged}
         selectedFiles={this.props.selectedFiles}
+        repository={this.props.repository}
       />
     )
   }

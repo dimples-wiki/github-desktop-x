@@ -119,6 +119,29 @@ async function waitListLoaded(page) {
   await page.waitForTimeout(1500)
   await driver.screenshot(page, '13-history-detail-with-description')
 
+  // 14 Commits：漏斗 caret + 切 tab 后筛选保留
+  await driver.openCommits(page)
+  await waitListLoaded(page)
+  const caretCount = await page
+    .locator('#commits-view .filter-box-container .filter-button svg')
+    .count()
+  console.log('[capture] commits funnel svg count (expect 2) =', caretCount)
+  await driver.setAuthorFilter(page, 'Yoko Tanaka')
+  await page.waitForTimeout(600)
+  const before = await driver.getResultCountText(page)
+  await driver.collapseFilters(page)
+  await driver.openChanges(page)
+  await page.waitForTimeout(800)
+  await driver.openCommits(page)
+  await waitListLoaded(page)
+  const after = await driver.getResultCountText(page)
+  console.log(
+    '[capture] commits filter persists across tabs:',
+    before, '→', after, '=>', before === after
+  )
+  await driver.screenshot(page, '14-commits-filter-persists')
+  await driver.clearFilters(page)
+
   // ── Changes/Tree 视图 ─────────────────────────────────────────
   await driver.openChanges(page)
   await page.waitForTimeout(1500)
@@ -158,6 +181,22 @@ async function waitListLoaded(page) {
   const filteredRows = await page.locator('.changes-tree-row').count()
   console.log('[capture] tree filter "demo" rows =', filteredRows)
   await driver.screenshot(page, '24-changes-tree-text-filter')
+
+  // 24b 切 tab 后 tree 筛选保留（视图仍是 Tree、文本与行数不变）
+  await driver.openHistory(page)
+  await page.waitForTimeout(600)
+  await driver.openChanges(page)
+  await page.waitForTimeout(1000)
+  const persistedText = await page
+    .locator('.changes-tree .filter-list-filter-field input')
+    .inputValue()
+  const persistedRows = await page.locator('.changes-tree-row').count()
+  console.log(
+    '[capture] tree filter persists across tabs:',
+    JSON.stringify(persistedText), persistedRows, 'rows =>',
+    persistedText === 'demo' && persistedRows === filteredRows
+  )
+  await driver.screenshot(page, '24b-tree-filter-persists')
   await page.fill('.changes-tree .filter-list-filter-field input', '')
   await page.waitForTimeout(400)
 

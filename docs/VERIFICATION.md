@@ -386,3 +386,39 @@ styles.ts 打磨弹窗 CSS 时整段替换把文件尾部的 `export function in
 - 第二轮：图标贴边修复像素级确认；选中色经原生对照实证 —— 原生 List 点击选中同为
   `rgb(3,102,214)`（浅色主题焦点态选中色，见 20b-list-clicked-selected.png），与 Tree 完全一致
 - 全套功能断言同时全绿：Commits 8 项筛选维度 + Tree 选中/折叠/文本筛选/状态筛选/全选切换
+
+# 第十六轮：Commits 漏斗 caret 补齐 + 筛选状态切 tab 保留（2026-10-09）
+
+用户反馈两项：① Commits 漏斗旁缺方向箭头（triangleDown caret）；② 切 tab 后筛选条件被清空。
+
+## 修复
+
+| 问题 | 根因 | 修法 |
+| --- | --- | --- |
+| 漏斗缺 caret | 提交侧边栏按钮少渲染 `triangleDown`；且不在 `.changes-list-container` 作用域，原生按钮布局规则够不到 | 按钮补 `<Octicon symbol={octicons.triangleDown} />`（插件自带的原生镜像 CSS 已有 `justify-content: space-between`，补上图标即同构）；容器 padding 从 `5px` 改为 `5px 10px` 对齐原生 `.header` |
+| 切 tab 丢筛选 | 两个插件的筛选状态都在组件 `this.state`，tab 切换即卸载；原生 Changes/History 的筛选存 store 所以不丢 | 插件侧模块级持久化（等价于 store 语义），**按仓库 id 作用域**避免跨仓库泄漏。Commits 持久化 `ICommitFilter`；Tree 持久化 filterText/statusFilters/collapsedFolders。宿主 slot 新增 `repository` prop 透传（patch 0004） |
+
+## 像素级验证（新基线脚本 measure-commits.ts）
+
+Commits 筛选行 vs Changes 校准基线，全部 ≤0.5px：
+按钮 x=10 / 宽 48 / 高 25；输入框 y 偏移 5 / 高 25；容器 padding `5px 10px`；按钮内 svg=2（漏斗+caret）。
+List/Tree 基线复测无回归（仍仅行序与文件夹行两项预期差）。
+
+## 功能回归（capture-evidence 新增断言）
+
+- Commits 漏斗 svg 数 = 2 ✓
+- 作者筛选 Yoko（9 of 34）→ 切 Changes → 切回仍 9 of 34 ✓（14-commits-filter-persists.png）
+- Tree 文本筛选 "demo"（3 行）→ 切 History → 切回仍 "demo" 3 行 ✓（24b-tree-filter-persists.png）
+- 原有 8 项 Commits 筛选维度 + 5 项 Tree 交互断言全绿
+
+## 盲审（visual-judge）
+
+Commits 漏斗 vs Changes 漏斗 2x 对照图（31-funnel-changes-top-vs-commits-bottom.png）：
+按钮 96×49、漏斗三杠几何、caret 14×7、相对偏移逐项一致，DOM 双轴交叉验证吻合 → pass。
+其余 02/20/14/24b/62 全部 pass。（前两轮 fail 均为取证图自身的裁剪错位/合成拉伸，非应用缺陷。）
+
+## 流程备注
+
+- 改 workspace 后必须先 `export-patches.sh` 再 `package-release.sh`：assemble 会用 patch 重建 workspace，
+  未导出的编辑会被抹掉（本轮 TS2741 构建失败即此因）
+- 证据图合成禁止各向异性 resize（会造出"纵向拉伸"假差异，被盲审逐像素拆穿）

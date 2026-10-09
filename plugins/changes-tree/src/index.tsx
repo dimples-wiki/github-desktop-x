@@ -279,18 +279,51 @@ function TreeCaret(props: { expanded: boolean }) {
   );
 }
 
+/** Tree view state that survives tab switches, scoped per repository
+ *  (the section unmounts on tab change; the native Changes filter state
+ *  lives in the store and persists the same way). */
+interface IPersistedTreeViewState {
+  collapsedFolders: Set<string>;
+  filterText: string;
+  statusFilters: IStatusFilters;
+}
+let persistedTreeState: IPersistedTreeViewState | null = null;
+let persistedTreeRepoId: any = undefined;
+
 export class ChangesTreeView extends React.Component<any, any> {
   private filterButtonRef: any = null;
 
   public constructor(props: any) {
     super(props);
 
+    const repoId = props.repository?.id;
+    if (
+      persistedTreeState === null ||
+      persistedTreeRepoId !== repoId
+    ) {
+      persistedTreeRepoId = repoId;
+      persistedTreeState = {
+        collapsedFolders: new Set<string>(),
+        filterText: "",
+        statusFilters: NoStatusFilters,
+      };
+    }
+
     this.state = {
-      collapsedFolders: new Set<string>(),
-      filterText: "",
-      statusFilters: NoStatusFilters,
+      collapsedFolders: persistedTreeState.collapsedFolders,
+      filterText: persistedTreeState.filterText,
+      statusFilters: persistedTreeState.statusFilters,
       isFilterOptionsOpen: false,
       focusWithin: false,
+    };
+  }
+
+  /** Persists the persistable slice after every relevant update. */
+  private persistState(state: any) {
+    persistedTreeState = {
+      collapsedFolders: state.collapsedFolders,
+      filterText: state.filterText,
+      statusFilters: state.statusFilters,
     };
   }
 
@@ -309,12 +342,18 @@ export class ChangesTreeView extends React.Component<any, any> {
       } else {
         collapsedFolders.add(path);
       }
-      return { collapsedFolders };
+      const next = { collapsedFolders };
+      this.persistState({ ...prevState, ...next });
+      return next;
     });
   };
 
   private onFilterTextChanged = (value: string) => {
-    this.setState({ filterText: value });
+    this.setState((prevState: any) => {
+      const next = { filterText: value };
+      this.persistState({ ...prevState, ...next });
+      return next;
+    });
   };
 
   private toggleFilterOptionsOpen = () => {
@@ -331,19 +370,27 @@ export class ChangesTreeView extends React.Component<any, any> {
   // no event reads (currentTarget is null inside the popover portal on
   // React 16). Native also closes the popover after each toggle.
   private onStatusFilterChanged = (key: string) => () => {
-    this.setState((prevState: any) => ({
-      statusFilters: {
-        ...prevState.statusFilters,
-        [key]: !prevState.statusFilters[key],
-      },
-      isFilterOptionsOpen: false,
-    }));
+    this.setState((prevState: any) => {
+      const next = {
+        statusFilters: {
+          ...prevState.statusFilters,
+          [key]: !prevState.statusFilters[key],
+        },
+        isFilterOptionsOpen: false,
+      };
+      this.persistState({ ...prevState, ...next });
+      return next;
+    });
   };
 
   private clearStatusFilters = () => {
-    this.setState({
-      statusFilters: NoStatusFilters,
-      isFilterOptionsOpen: false,
+    this.setState((prevState: any) => {
+      const next = {
+        statusFilters: NoStatusFilters,
+        isFilterOptionsOpen: false,
+      };
+      this.persistState({ ...prevState, ...next });
+      return next;
     });
   };
 

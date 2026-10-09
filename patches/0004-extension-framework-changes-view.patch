@@ -1,5 +1,5 @@
 diff --git a/app/src/ui/changes/filter-changes-list.tsx b/app/src/ui/changes/filter-changes-list.tsx
-index 11fad24..da7cfdc 100644
+index 11fad24..6eb2096 100644
 --- a/app/src/ui/changes/filter-changes-list.tsx
 +++ b/app/src/ui/changes/filter-changes-list.tsx
 @@ -73,6 +73,9 @@ import {
@@ -56,7 +56,7 @@ index 11fad24..da7cfdc 100644
        </div>
      )
    }
-@@ -1332,56 +1365,72 @@ export class FilterChangesList extends React.Component<
+@@ -1332,56 +1365,73 @@ export class FilterChangesList extends React.Component<
      return (
        <>
          <div className="changes-list-container file-list filtered-changes-list">
@@ -102,6 +102,7 @@ index 11fad24..da7cfdc 100644
 -                : undefined
 +            availableWidth={this.props.availableWidth}
 +            selectedFiles={this.state.selectedItems}
++            repository={this.props.repository}
 +            onFileContextMenu={this.onChangesFileViewContextMenu}
 +            fallback={
 +              <AugmentedSectionFilterList<IChangesListItem>

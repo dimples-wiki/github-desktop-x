@@ -115,6 +115,8 @@
   var __DARWIN__ = globalThis.__GHD_EXTENSION_API__.isDarwin;
   var CloseToBottomThreshold = 10;
   var AllAuthorsValue = "";
+  var persistedFilter = EmptyCommitFilter;
+  var persistedRepoId = void 0;
   var CommitsSidebar = class extends React.Component {
     commitListRef = { current: null };
     filterButtonRef = null;
@@ -124,8 +126,13 @@
     cachedAuthors = [];
     constructor(props) {
       super(props);
+      const repoId = props.repository?.id;
+      if (persistedRepoId !== repoId) {
+        persistedRepoId = repoId;
+        persistedFilter = EmptyCommitFilter;
+      }
       this.state = {
-        filter: EmptyCommitFilter,
+        filter: persistedFilter,
         isFilterOptionsOpen: false
       };
     }
@@ -148,9 +155,11 @@
       }
     };
     onFilterChanged = (update) => {
-      this.setState((prevState) => ({
-        filter: { ...prevState.filter, ...update }
-      }));
+      this.setState((prevState) => {
+        const filter = { ...prevState.filter, ...update };
+        persistedFilter = filter;
+        return { filter };
+      });
     };
     onMessageTextChanged = (value) => {
       this.onFilterChanged({
@@ -173,6 +182,7 @@
       this.onFilterChanged({ dateTo: value.length === 0 ? null : value });
     };
     onClearFilters = () => {
+      persistedFilter = EmptyCommitFilter;
       this.setState({ filter: EmptyCommitFilter });
     };
     onCommitsSelected = (commits, isContiguous) => {
@@ -301,7 +311,8 @@
           ariaLabel: __DARWIN__ ? "Filter Options" : "Filter options"
         },
         /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons2.filter })),
-        hasAdvancedFilters ? /* @__PURE__ */ React.createElement("span", { className: "active-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-bg" }, /* @__PURE__ */ React.createElement("div", { className: "badge" }))) : null
+        hasAdvancedFilters ? /* @__PURE__ */ React.createElement("span", { className: "active-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-bg" }, /* @__PURE__ */ React.createElement("div", { className: "badge" }))) : null,
+        /* @__PURE__ */ React.createElement(Octicon, { symbol: octicons2.triangleDown })
       ), /* @__PURE__ */ React.createElement(
         TextBox,
         {
@@ -439,11 +450,13 @@
 
 /* \u2500\u2500 Filter bar: joined filter-options button + message search box \u2500\u2500 */
 
+/* Same paddings as the native .header: 5px vertical / 10px horizontal,
+   so the funnel sits at the same x as the Changes filter row. */
 #commits-view .filter-box-container {
   display: flex;
   align-items: center;
   background: var(--box-alt-background-color);
-  padding: var(--spacing-half);
+  padding: var(--spacing-half) var(--spacing);
   border-bottom: var(--base-border);
   margin-bottom: 0;
 }
@@ -536,7 +549,7 @@
   flex-direction: row;
   align-items: center;
   background: var(--box-alt-background-color);
-  padding: 0 var(--spacing-half) var(--spacing-half);
+  padding: 0 var(--spacing) var(--spacing-half);
 }
 
 #commits-view .commits-filter-summary .commits-filter-count {

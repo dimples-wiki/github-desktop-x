@@ -19,6 +19,15 @@ const CloseToBottomThreshold = 10
 
 const AllAuthorsValue = ''
 
+/**
+ * The filter values survive tab switches: the section unmounts when the
+ * user visits another tab, and the native Changes/History filters live in
+ * the store and persist the same way. Scoped per repository so filters
+ * never leak across repositories.
+ */
+let persistedFilter: ICommitFilter = EmptyCommitFilter
+let persistedRepoId: any = undefined
+
 interface ICommitsSidebarState {
   readonly filter: ICommitFilter
 
@@ -48,8 +57,14 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
   public constructor(props: any) {
     super(props)
 
+    const repoId = props.repository?.id
+    if (persistedRepoId !== repoId) {
+      persistedRepoId = repoId
+      persistedFilter = EmptyCommitFilter
+    }
+
     this.state = {
-      filter: EmptyCommitFilter,
+      filter: persistedFilter,
       isFilterOptionsOpen: false,
     }
   }
@@ -78,9 +93,11 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
   }
 
   private onFilterChanged = (update: Partial<ICommitFilter>) => {
-    this.setState((prevState: any) => ({
-      filter: { ...prevState.filter, ...update },
-    }))
+    this.setState((prevState: any) => {
+      const filter = { ...prevState.filter, ...update }
+      persistedFilter = filter
+      return { filter }
+    })
   }
 
   private onMessageTextChanged = (value: string) => {
@@ -113,6 +130,7 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
   }
 
   private onClearFilters = () => {
+    persistedFilter = EmptyCommitFilter
     this.setState({ filter: EmptyCommitFilter })
   }
 
@@ -297,6 +315,7 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
                 </div>
               </span>
             ) : null}
+            <Octicon symbol={octicons.triangleDown} />
           </Button>
 
           <TextBox
