@@ -1,6 +1,6 @@
 {
   "name": "@dimples/github",
-  "version": "3.6.7",
+  "version": "3.6.7-beta.1",
   "description": "Installer/launcher for GitHub Desktop X (bundled app archive, no download needed)",
   "bin": {
     "githubx": "bin/cli.js",
