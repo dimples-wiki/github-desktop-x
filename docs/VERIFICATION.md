@@ -456,3 +456,26 @@ Commits 漏斗 vs Changes 漏斗 2x 对照图（31-funnel-changes-top-vs-commits
 ## 流程备注
 
 - ffmpeg 不在机器上：用 npm `ffmpeg-static` 做 webm→mp4（QuickTime 可播）
+
+# 第十八轮：brew 安装路径闭环（2026-10-10）
+
+用户在另一台 Mac 用 brew 三行命令安装，发现黄图标 + 无插件。挖出两个发布链路缺陷并修复：
+
+1. **bundle ID 共享官方值**（com.github.GitHubClient）→ macOS 按其缓存图标，旧 Dimple
+   的黄图标被套在新应用上。改为独立身份 com.dimples-wiki.github-desktop-x（patch 0008）。
+2. **插件从不随包分发**——插件装在 userData，发布包是"裸"应用。现在官方双插件内置进
+   app 包（Resources/bundled-plugins），plugin-host 启动时向 userData 播种缺失插件
+   （用户已有目录永不覆盖）。
+
+## 干净缓存验证（本机 brew 安装版）
+
+- 删除 userData/plugins 与 plugins.bak → 启动 → 两插件自动播种 → Commits tab 加载 ✓
+- 扫描 CLEAN（一次瞬时 SSL stderr 为网络瞬态，复扫无）
+- 应用由 brew 托管（brew list --cask 含 githubx），bundle id 已验证为独立值
+
+## 已知边界
+
+- Homebrew 7 移除了 --no-quarantine 且 cask 的 postflight_steps 无任意命令执行；
+  自动清隔离走仍在运行的旧 postflight（弃用警告可接受），并已在 README 写明
+  Gatekeeper 首启放行与 sudo xattr 后备
+- 未公证应用在每台新机器需一次放行；彻底解决需 Apple Developer ID 公证（$99/年）
