@@ -22,8 +22,10 @@ cask "githubx" do
   # - OAuth 协议头为 x-github-desktop-dev-auth（官方用 x-github-desktop-auth），互不劫持
   app "GitHub Desktop X.app"
 
-  # 应用未公证：移除 brew 传播的 quarantine 标记，避免 Gatekeeper 拦截首次启动。
-  # 安装尾声会请求一次管理员密码。
+  # 应用未公证：安装尾声移除 brew 传播的 quarantine 标记，避免 Gatekeeper 拦截
+  # 首次启动（会请求一次管理员密码）。注：postflight 属于 Homebrew 弃用中的
+  # 旧机制（新版仅支持声明式文件操作、无任意命令执行），一旦失效请按 README
+  # 的「首次启动」说明手动放行。
   postflight do
     system_command "/usr/bin/xattr",
                    args: ["-rd", "com.apple.quarantine", "#{appdir}/GitHub Desktop X.app"],
