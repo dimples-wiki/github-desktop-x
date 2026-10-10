@@ -74,7 +74,23 @@ async function latestVersion() {
 }
 
 /** 断点续传下载（.part 保留进度，完整后原子改名）。 */
-function download(url, dest) {
+// 下载源列表：GitHub 直连优先，失败自动回退公共镜像。
+// 可用环境变量 GHX_MIRRORS 覆盖（逗号分隔，{url} 为占位符）。
+const MIRRORS = (process.env.GHX_MIRRORS ||
+  'https://mirror.ghproxy.com/{url},https://gh-proxy.com/{url}')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
+
+function candidates(url) {
+  const list = [url]
+  for (const m of MIRRORS) {
+    if (m.includes('{url}')) list.push(m.replace('{url}', url))
+  }
+  return list
+}
+
+async function downloadOnce(url, dest) {
   return new Promise((resolve, reject) => {
     const part = `${dest}.part`
     const have = fs.existsSync(part) ? fs.statSync(part).size : 0
@@ -85,10 +101,10 @@ function download(url, dest) {
       // 重定向跟随（GitHub Release → objects.githubusercontent.com）
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume()
-        return resolve(download(res.headers.location, dest))
+        return resolve(downloadOnce(res.headers.location, dest))
       }
       if (res.statusCode === 416) {
-        // 已下载完整
+        // 断点已齐：下载完成
         req.destroy()
         fs.renameSync(part, dest)
         return resolve(dest)
@@ -98,8 +114,7 @@ function download(url, dest) {
         return reject(new Error(`HTTP ${res.statusCode} ${url}`))
       }
 
-      const total =
-        have + parseInt(res.headers['content-length'] || '0', 10)
+      const total = have + parseInt(res.headers['content-length'] || '0', 10)
       const out = fs.createWriteStream(part, { flags: have > 0 ? 'a' : 'w' })
       let done = have
       res.on('data', c => {
@@ -119,6 +134,19 @@ function download(url, dest) {
     })
     req.on('error', reject)
   })
+}
+
+async function download(url, dest) {
+  const sources = candidates(url)
+  for (let i = 0; i < sources.length; i++) {
+    try {
+      log(i === 0 ? `下载（直连）...` : `直连失败，切换镜像源 ${i} ...`)
+      return await downloadOnce(sources[i], dest)
+    } catch (e) {
+      log(`  源失败：${e.message}`)
+      if (i === sources.length - 1) throw e
+    }
+  }
 }
 
 function sha256(file) {

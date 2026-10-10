@@ -35,6 +35,13 @@ for d in "$ROOT"/plugins/*/; do
   mkdir -p "$APP/Contents/Resources/bundled-plugins/$name"
   cp "$d/plugin.json" "$d/renderer.js" "$APP/Contents/Resources/bundled-plugins/$name/"
 done
+
+# 图标治理：上游 Assets.car / CFBundleIconName 携带旧版黄色图标，且 macOS 26
+# 优先走 CFBundleIconName（资产目录）而非 CFBundleIconFile（electron.icns）。
+# 删除资产目录与 IconName，强制系统使用我们替换过的 electron.icns（黑底插口眼）。
+rm -f "$APP/Contents/Resources/Assets.car"
+/usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$APP/Contents/Info.plist" 2>/dev/null || true
+
 codesign --force --deep --sign - "$APP"
 
 codesign --verify --deep "$APP"
@@ -51,14 +58,6 @@ ditto -ck --keepParent "$APP" "$ZIP"
 SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
 echo
 
-# 自动把版本与 sha256 钉进 cask（githubx）
-CASK="$ROOT/Casks/githubx.rb"
-if [ -f "$CASK" ]; then
-  sed -i '' -E 's|sha256 :no_check|sha256 "'"$SHA"'"|; s|sha256 "[0-9a-f]{64}"|sha256 "'"$SHA"'"|' "$CASK"
-  sed -i '' -E 's|version "[^"]+"|version "'"$VERSION"'"|' "$CASK"
-  echo "[release] cask 已更新：$CASK"
-  "$ROOT/scripts/publish-tap.sh" || true
-fi
 echo "================= 发布物料 ================="
 echo "zip:  $ZIP"
 echo "version: $VERSION"
