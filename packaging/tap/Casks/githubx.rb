@@ -22,6 +22,14 @@ cask "githubx" do
   # - OAuth 协议头为 x-github-desktop-dev-auth（官方用 x-github-desktop-auth），互不劫持
   app "GitHub Desktop X.app"
 
+  # 应用未公证：移除 brew 传播的 quarantine 标记，避免 Gatekeeper 拦截首次启动。
+  # 安装尾声会请求一次管理员密码。
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-rd", "com.apple.quarantine", "#{appdir}/GitHub Desktop X.app"],
+                   sudo: true
+  end
+
   # 产物为 ad-hoc 签名（本地验证通过；公开发布需替换为开发者签名+公证，
   # 参见仓库 docs/FEASIBILITY-BREW-PLUGIN.md）。未公证的安装建议：
   #   brew install --cask --no-quarantine githubx

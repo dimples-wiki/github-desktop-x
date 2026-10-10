@@ -25,8 +25,8 @@ brew install --cask githubx
 
 > 一行版：`brew tap dimples-wiki/githubx && brew trust dimples-wiki/githubx && brew install --cask githubx`
 >
-> **首次启动**：应用未经 Apple 公证，Gatekeeper 可能拦截。在 系统设置 → 隐私与安全性 点「仍要打开」，
-> 或执行 `sudo xattr -rd com.apple.quarantine "/Applications/GitHub Desktop X.app"`（每台机器一次）。
+> 安装尾声会请求一次管理员密码（移除隔离标记，应用未做 Apple 公证）——输入后 Gatekeeper 不再拦截，
+> 无需任何额外操作。
 
 要求：macOS Monterey 及以上 · Apple Silicon。与官方 GitHub Desktop 可共存（应用名、userData、OAuth 协议头均隔离）。
 
