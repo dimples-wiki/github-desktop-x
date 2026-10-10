@@ -163,7 +163,7 @@ function launch() {
 
 async function main() {
   if (wantsHelp) {
-    log(`Usage: npx @dimples-wiki/githubx [--update]\n\n  无参数   应用缺失时安装最新版，然后启动\n  --update 强制重新下载最新版覆盖安装`)
+    log(`Usage: npx @dimples/github [--update]\n\n  无参数   应用缺失时安装最新版，然后启动\n  --update 强制重新下载最新版覆盖安装`)
     return
   }
   if (process.platform !== 'darwin') die('本安装器仅支持 macOS。')
