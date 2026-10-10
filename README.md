@@ -18,15 +18,14 @@
 ## 安装
 
 ```bash
-brew tap dimples-wiki/githubx
-brew trust dimples-wiki/githubx   # Homebrew 7+ 需显式信任第三方 tap
-brew install --cask githubx
+npx @dimples-wiki/githubx
 ```
 
-> 一行版：`brew tap dimples-wiki/githubx && brew trust dimples-wiki/githubx && brew install --cask githubx`
->
-> 安装尾声会请求一次管理员密码（移除隔离标记，应用未做 Apple 公证）——输入后 Gatekeeper 不再拦截，
-> 无需任何额外操作。
+安装器会从 GitHub Releases 下载最新 zip、解压到「应用程序」文件夹并打开应用。
+全程通过命令行完成，不产生 Gatekeeper 隔离标记（无需签名与公证放行）。
+
+再次执行 `npx @dimples-wiki/githubx` 默认直接启动已安装的应用；
+`npx @dimples-wiki/githubx --update` 拉取最新版本覆盖安装。
 
 要求：macOS Monterey 及以上 · Apple Silicon。与官方 GitHub Desktop 可共存（应用名、userData、OAuth 协议头均隔离）。
 
