@@ -1,6 +1,6 @@
 {
   "name": "@dimples/github",
-  "version": "1.0.0",
+  "version": "3.6.7",
   "description": "Installer/launcher for GitHub Desktop X \u2014 downloads the latest release, extracts to /Applications and opens it",
   "bin": {
     "githubx": "bin/cli.js",
