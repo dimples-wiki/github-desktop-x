@@ -1,5 +1,5 @@
 {
-  "name": "@xiecp/githubx",
+  "name": "@dimples/github",
   "version": "3.6.6",
   "description": "Installer/launcher for GitHub Desktop X \u2014 downloads the latest release, extracts to /Applications and opens it",
   "bin": {
