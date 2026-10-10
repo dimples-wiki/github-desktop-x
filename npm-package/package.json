@@ -1,0 +1,18 @@
+{
+  "name": "@dimples-wiki/githubx",
+  "version": "3.6.6",
+  "description": "Installer/launcher for GitHub Desktop X — downloads the latest release, extracts to /Applications and opens it",
+  "bin": {
+    "githubx": "bin/cli.js",
+    "@dimples-wiki/githubx": "bin/cli.js"
+  },
+  "files": ["bin/cli.js", "README.md"],
+  "engines": { "node": ">=18" },
+  "keywords": ["github", "desktop", "git", "gui", "electron"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dimples-wiki/github-desktop-x.git",
+    "directory": "npm-package"
+  }
+}
