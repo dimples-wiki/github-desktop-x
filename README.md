@@ -18,14 +18,14 @@
 ## 安装
 
 ```bash
-npx @dimples-wiki/githubx
+npx @xiecp/githubx
 ```
 
 安装器会从 GitHub Releases 下载最新 zip、解压到「应用程序」文件夹并打开应用。
 全程通过命令行完成，不产生 Gatekeeper 隔离标记（无需签名与公证放行）。
 
-再次执行 `npx @dimples-wiki/githubx` 默认直接启动已安装的应用；
-`npx @dimples-wiki/githubx --update` 拉取最新版本覆盖安装。
+再次执行 `npx @xiecp/githubx` 默认直接启动已安装的应用；
+`npx @xiecp/githubx --update` 拉取最新版本覆盖安装。
 
 要求：macOS Monterey 及以上 · Apple Silicon。与官方 GitHub Desktop 可共存（应用名、userData、OAuth 协议头均隔离）。
 
