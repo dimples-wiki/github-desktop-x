@@ -45,13 +45,19 @@ rm -f "$APP/Contents/Resources/Assets.car"
 codesign --force --deep --sign - "$APP"
 
 codesign --verify --deep "$APP"
+
+# 发布资产随 npm 安装器版本命名，上传到应用版本的 Release（每次发布新资产、永不覆盖）
+if command -v gh >/dev/null 2>&1; then
+  gh release upload "v$(python3 -c "import json;print(json.load(open('$ROOT/app/package.json'))['version'])")" "$ZIP" --clobber || true
+fi
 echo "[release] 签名校验通过：$(codesign -dv "$APP" 2>&1 | grep -E 'Signature=' | head -1)"
 
 echo "[release] 4/4 压缩发布包"
 VERSION="$(python3 -c "import json;print(json.load(open('$WS/app/package.json'))['version'])")"
 OUT_DIR="$ROOT/dist-release"
 mkdir -p "$OUT_DIR"
-ZIP="$OUT_DIR/GitHub-Desktop-X-${VERSION}-macOS-arm64.zip"
+NPM_VERSION="$(python3 -c "import json;print(json.load(open('$ROOT/npm-package/package.json'))['version'])")"
+ZIP="$OUT_DIR/GitHub-Desktop-X-${NPM_VERSION}-macOS-arm64.zip"
 rm -f "$ZIP"
 ditto -ck --keepParent "$APP" "$ZIP"
 

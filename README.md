@@ -24,8 +24,8 @@ npx @dimples/github
 安装器会从 GitHub Releases 下载最新 zip、解压到「应用程序」文件夹并打开应用。
 全程通过命令行完成，不产生 Gatekeeper 隔离标记（无需签名与公证放行）。
 
-再次执行 `npx @dimples/github` 默认直接启动已安装的应用；
-`npx @dimples/github --update` 拉取最新版本覆盖安装。
+每个安装器版本对应一份独立命名的发布资产（永不覆盖）：发布新版后重新执行
+`npx @dimples/github@beta` 会自动检测并升级；日常直接 `npx @dimples/github` 秒启动。
 
 要求：macOS Monterey 及以上 · Apple Silicon。与官方 GitHub Desktop 可共存（应用名、userData、OAuth 协议头均隔离）。
 
