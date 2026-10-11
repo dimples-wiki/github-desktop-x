@@ -1,6 +1,6 @@
 {
   "name": "@dimples/github",
-  "version": "3.6.7-beta.1",
+  "version": "3.6.7-beta.2",
   "description": "Installer/launcher for GitHub Desktop X (bundled app archive, no download needed)",
   "bin": {
     "githubx": "bin/cli.js",
@@ -25,5 +25,6 @@
     "type": "git",
     "url": "https://github.com/dimples-wiki/github-desktop-x.git",
     "directory": "npm-package"
-  }
+  },
+  "appVersion": "3.6.6"
 }

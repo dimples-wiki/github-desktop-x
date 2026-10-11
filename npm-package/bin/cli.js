@@ -54,23 +54,49 @@ function get(url, headers = {}) {
         res.resume()
         return resolve(get(res.headers.location, headers))
       }
-      resolve({ res })
+      resolve({ res, finalUrl: url })
     })
     req.on('error', reject)
   })
 }
 
+const APP_VERSION = require('../package.json').appVersion
+
 async function latestVersion() {
   log('查询最新版本 ...')
-  const { res } = await get(`https://api.github.com/repos/${OWNER}/${REPO}/releases/latest`, {
-    'User-Agent': 'githubx-installer',
-  })
-  let body = ''
-  for await (const chunk of res) body += chunk
-  if (res.statusCode !== 200) die(`查询版本失败：HTTP ${res.statusCode}`)
-  const tag = JSON.parse(body).tag_name
-  if (!tag) die('发布信息异常：没有 tag_name')
-  return tag.replace(/^v/, '')
+
+  // 1) 主站重定向：github.com 可达性远好于 api.github.com，且无 API 限速
+  try {
+    const { finalUrl } = await get(
+      `https://github.com/${OWNER}/${REPO}/releases/latest`,
+      { 'User-Agent': 'githubx-installer' }
+    )
+    const m = /\/tag\/v([^/?#]+)/.exec(finalUrl || '')
+    if (m) {
+      log(`最新版本 ${m[1]}`)
+      return m[1]
+    }
+  } catch {}
+
+  // 2) API（含镜像回退）
+  const api = `https://api.github.com/repos/${OWNER}/${REPO}/releases/latest`
+  for (const source of candidates(api)) {
+    try {
+      const { res } = await get(source, { 'User-Agent': 'githubx-installer' })
+      let body = ''
+      for await (const chunk of res) body += chunk
+      if (res.statusCode !== 200) continue
+      const tag = JSON.parse(body).tag_name
+      if (tag) {
+        log(`最新版本 ${tag.replace(/^v/, '')}（API）`)
+        return tag.replace(/^v/, '')
+      }
+    } catch {}
+  }
+
+  // 3) 兜底：本安装器发行时所对应的应用版本
+  log(`无法查询最新版本，使用内置版本 ${APP_VERSION}`)
+  return APP_VERSION
 }
 
 /** 断点续传下载（.part 保留进度，完整后原子改名）。 */
