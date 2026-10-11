@@ -154,6 +154,7 @@ async function downloadOnce(url, dest) {
       out.on('finish', () => {
         process.stdout.write('\n')
         fs.renameSync(part, dest)
+        fs.writeFileSync(`${dest}.etag`, res.headers.etag || res.headers['last-modified'] || '')
         resolve(dest)
       })
       out.on('error', reject)
@@ -177,6 +178,53 @@ async function download(url, dest) {
 
 function sha256(file) {
   return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+}
+
+
+function readEtag(cachedZip) {
+  const etagFile = `${cachedZip}.etag`
+  if (!fs.existsSync(etagFile)) return null
+  return fs.readFileSync(etagFile, 'utf8') || null
+}
+
+/** HEAD 跟随重定向，取最终响应的 ETag。失败返回 null（调用方自行兜底）。 */
+function headEtag(url) {
+  return new Promise(resolve => {
+    const req = https.request(url, { method: 'HEAD', headers: { 'User-Agent': 'githubx-installer' } }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume()
+        return resolve(headEtag(res.headers.location))
+      }
+      res.resume()
+      resolve(res.headers.etag || res.headers['last-modified'] || null)
+    })
+    req.on('error', () => resolve(null))
+    req.end()
+  })
+}
+
+function installedAppVersion() {
+  try {
+    return execFileSync(
+      '/usr/libexec/PlistBuddy',
+      ['-c', 'Print :CFBundleShortVersionString', `${APP_PATH}/Contents/Info.plist`],
+      { encoding: 'utf8' }
+    ).trim()
+  } catch {
+    return null
+  }
+}
+
+/** 比较 semver：a > b 返回 true（忽略 prerelease 细节的宽松比较）。 */
+function versionGt(a, b) {
+  if (!a || !b) return false
+  const pa = a.split('-')[0].split('.').map(Number)
+  const pb = b.split('-')[0].split('.').map(Number)
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return true
+    if ((pa[i] || 0) < (pb[i] || 0)) return false
+  }
+  return false
 }
 
 async function fetchAsset(version) {
@@ -223,14 +271,36 @@ async function main() {
   if (process.platform !== 'darwin') die('本安装器仅支持 macOS。')
 
   const installed = fs.existsSync(APP_PATH)
+  const latest = await latestVersion()
+  const installedVer = installed ? installedAppVersion() : null
 
-  if (installed && !forceUpdate) {
-    log(`${APP_NAME} 已安装，直接启动（--update 可强制更新）`)
+  let needInstall = !installed || versionGt(latest, installedVer)
+
+  if (installed && !needInstall && !forceUpdate) {
+    // 版本相同：HEAD 探测发布资产内容是否被原地更新（ETag 变化 → 重装）
+    const cachedZip = path.join(CACHE_DIR, `GitHub-Desktop-X-${latest}-macOS-${ARCH}.zip`)
+    if (fs.existsSync(cachedZip)) {
+      const current = await headEtag(
+        `https://github.com/${OWNER}/${REPO}/releases/download/v${latest}/GitHub-Desktop-X-${latest}-macOS-${ARCH}.zip`
+      )
+      const stored = readEtag(cachedZip)
+      if (current && stored !== current) {
+        log('发布内容已更新（同版本覆盖），自动升级 ...')
+        needInstall = true
+      }
+    } else {
+      // 无缓存基线：下载一次以建立 ETag 基线
+      needInstall = true
+    }
+  }
+
+  if (!needInstall) {
+    log(`已是最新（v${installedVer}），直接启动`)
     launch()
     return
   }
 
-  const version = await latestVersion()
+  const version = latest
   const zipFile = await fetchAsset(version)
   install(zipFile)
   log(`v${version} 安装完成`)
