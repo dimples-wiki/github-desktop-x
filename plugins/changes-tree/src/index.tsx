@@ -153,6 +153,63 @@ const treeCss = `
   overflow-y: auto;
 }
 
+.changes-tree-body .changes-tree-row .checkbox-component {
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.changes-tree-fold-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary-color);
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.changes-tree-fold-btn:hover {
+  color: var(--text-color);
+  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.07));
+}
+
+.changes-tree-fold-btn .octicon,
+.changes-tree-fold-btn svg {
+  fill: currentColor;
+}
+
+.changes-tree-context-menu {
+  min-width: 180px;
+  background: var(--box-background-color, #fff);
+  border: 1px solid var(--box-border-color, var(--box-border-color));
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 4px;
+}
+
+.changes-tree-context-menu-item {
+  display: block;
+  width: 100%;
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  font-size: var(--font-size);
+  text-align: left;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.changes-tree-context-menu-item:hover {
+  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.07));
+}
+
 /* The filter row and the include-all header reuse the native
    .header.filter-field-row classes, so every host style
    (.changes-list-container .header ...) applies unchanged and both
@@ -208,6 +265,7 @@ interface ITreeRow {
   readonly path: string;
   readonly file?: any;
   readonly descendantCount: number;
+  readonly node: ITreeNode;
 }
 
 function flattenTree(
@@ -234,6 +292,7 @@ function flattenTree(
       path: node.path,
       file: node.file,
       descendantCount,
+      node,
     });
 
     if (isFolder && !collapsed.has(node.path)) {
@@ -283,6 +342,16 @@ function countStatuses(files: ReadonlyArray<any>): IStatusCounts {
   }
 
   return { included, excluded, newFiles, modifiedFiles, deletedFiles };
+}
+
+function collectFilesUnder(node: ITreeNode): any[] {
+  const files: any[] = [];
+  const walk = (n: ITreeNode) => {
+    if (n.file) files.push(n.file);
+    for (const child of n.children.values()) walk(child);
+  };
+  walk(node);
+  return files;
 }
 
 function TreeCaret(props: { expanded: boolean }) {
@@ -341,6 +410,7 @@ export class ChangesTreeView extends React.Component<any, any> {
       statusFilters: persistedTreeState.statusFilters,
       isFilterOptionsOpen: false,
       focusWithin: false,
+      contextMenu: null, // { node, anchor }
     };
   }
 
@@ -380,6 +450,93 @@ export class ChangesTreeView extends React.Component<any, any> {
       this.persistState({ ...prevState, ...next });
       return next;
     });
+  };
+
+  private collapseAll = () => {
+    this.setState((prevState: any) => {
+      const collapsedFolders = new Set<string>();
+      const walk = (nodes: Map<string, ITreeNode>) => {
+        for (const n of nodes.values()) {
+          if (n.file === undefined) {
+            collapsedFolders.add(n.path);
+            walk(n.children);
+          }
+        }
+      };
+      walk(buildTree(this.props.files));
+      const next = { collapsedFolders };
+      this.persistState({ ...prevState, ...next });
+      return next;
+    });
+  };
+
+  private expandAll = () => {
+    this.setState((prevState: any) => {
+      const next = { collapsedFolders: new Set<string>() };
+      this.persistState({ ...prevState, ...next });
+      return next;
+    });
+  };
+
+  /** 文件夹的包含状态：全含 On / 全不含 Off / 混合 Mixed */
+  private folderIncludeValue(node: ITreeNode): CheckboxValue {
+    const files = collectFilesUnder(node);
+    if (files.length === 0) return CheckboxValue.Off;
+    let included = 0;
+    for (const f of files) {
+      if (f.selection.getSelectionType() === DiffSelectionType.All) included++;
+    }
+    if (included === files.length) return CheckboxValue.On;
+    if (included === 0) return CheckboxValue.Off;
+    return CheckboxValue.Mixed;
+  }
+
+  /** 文件夹勾选：批量包含/排除其下所有文件 */
+  private toggleFolderInclude = (node: ITreeNode) => {
+    const files = collectFilesUnder(node);
+    const allIncluded =
+      files.length > 0 &&
+      files.every(
+        (f) => f.selection.getSelectionType() === DiffSelectionType.All,
+      );
+    const target = !allIncluded;
+    for (const f of files) {
+      this.props.onIncludeChanged(f, target);
+    }
+  };
+
+  private openFolderMenu = (event: any, node: ITreeNode) => {
+    event.preventDefault();
+    this.setState({
+      contextMenu: { node, anchor: event.currentTarget },
+    });
+  };
+
+  /** 文件夹右键菜单动作：放弃其下所有文件的更改（走原生确认弹窗） */
+  private discardFolderChanges = (node: ITreeNode) => {
+    const files = collectFilesUnder(node);
+    const api = (globalThis as any).__GHD_EXTENSION_API__;
+    const show = api?.actions?.showDiscardChangesConfirmation;
+    console.log(
+      "[changes-tree] discard invoked",
+      "files:", files.length,
+      "| repository:", !!this.props.repository,
+      "| show:", typeof show,
+    );
+    if (show && this.props.repository) {
+      try {
+        show(this.props.repository, files);
+        console.log("[changes-tree] showDiscardChangesConfirmation called ok");
+      } catch (e) {
+        console.error("[changes-tree] show failed", e);
+      }
+    } else {
+      console.warn("[changes-tree] discard confirmation unavailable");
+    }
+  };
+
+  private closeContextMenu = () => {
+    this.setState({ contextMenu: null });
   };
 
   private toggleFilterOptionsOpen = () => {
@@ -598,6 +755,22 @@ export class ChangesTreeView extends React.Component<any, any> {
                   className="changes-list-check-all"
                   label={checkAllLabel}
                 />
+                <button
+                  className="changes-tree-fold-btn"
+                  title="折叠全部"
+                  aria-label="折叠全部"
+                  onClick={() => this.collapseAll()}
+                >
+                  <Octicon symbol={octicons.fold} />
+                </button>
+                <button
+                  className="changes-tree-fold-btn"
+                  title="展开全部"
+                  aria-label="展开全部"
+                  onClick={() => this.expandAll()}
+                >
+                  <Octicon symbol={octicons.unfold} />
+                </button>
               </div>
             </div>
 
@@ -634,7 +807,7 @@ export class ChangesTreeView extends React.Component<any, any> {
                   }}
                   onContextMenu={
                     isFolder
-                      ? undefined
+                      ? (event: any) => this.openFolderMenu(event, row.node)
                       : (event: any) => {
                           event.preventDefault();
                           this.props.onFileContextMenu(row.file, event);
@@ -642,6 +815,19 @@ export class ChangesTreeView extends React.Component<any, any> {
                   }
                   title={row.path}
                 >
+                  {isFolder ? (
+                    <span
+                      className="folder-checkbox"
+                      onClick={(e) => e.stopPropagation()}
+                      onContextMenu={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        value={this.folderIncludeValue(row.node)}
+                        onChange={() => this.toggleFolderInclude(row.node)}
+                      />
+                    </span>
+                  ) : null}
+
                   {isFolder ? (
                     <TreeCaret
                       expanded={!this.state.collapsedFolders.has(row.path)}
@@ -681,6 +867,28 @@ export class ChangesTreeView extends React.Component<any, any> {
             </div>
           </div>
         </div>
+
+        {this.state.contextMenu ? (
+          <Popover
+            className="changes-tree-context-menu"
+            anchor={this.state.contextMenu.anchor}
+            anchorPosition={PopoverAnchorPosition.BottomRight}
+            decoration={PopoverDecoration.Balloon}
+            onMousedownOutside={() => this.closeContextMenu()}
+            onClickOutside={() => this.closeContextMenu()}
+          >
+            <button
+              className="changes-tree-context-menu-item"
+              onClick={() => {
+                const node = this.state.contextMenu.node;
+                this.closeContextMenu();
+                this.discardFolderChanges(node);
+              }}
+            >
+              放弃更改…
+            </button>
+          </Popover>
+        ) : null}
       </div>
     );
   }

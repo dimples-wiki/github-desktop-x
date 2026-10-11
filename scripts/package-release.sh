@@ -46,27 +46,21 @@ codesign --force --deep --sign - "$APP"
 
 codesign --verify --deep "$APP"
 
-# 发布资产随 npm 安装器版本命名，上传到应用版本的 Release（每次发布新资产、永不覆盖）
-if command -v gh >/dev/null 2>&1; then
-  gh release upload "v$(python3 -c "import json;print(json.load(open('$ROOT/app/package.json'))['version'])")" "$ZIP" --clobber || true
-fi
-echo "[release] 签名校验通过：$(codesign -dv "$APP" 2>&1 | grep -E 'Signature=' | head -1)"
-
 echo "[release] 4/4 压缩发布包"
 VERSION="$(python3 -c "import json;print(json.load(open('$WS/app/package.json'))['version'])")"
+NPM_VERSION="$(python3 -c "import json;print(json.load(open('$ROOT/npm-package/package.json'))['version'])")"
 OUT_DIR="$ROOT/dist-release"
 mkdir -p "$OUT_DIR"
-NPM_VERSION="$(python3 -c "import json;print(json.load(open('$ROOT/npm-package/package.json'))['version'])")"
 ZIP="$OUT_DIR/GitHub-Desktop-X-${NPM_VERSION}-macOS-arm64.zip"
 rm -f "$ZIP"
 ditto -ck --keepParent "$APP" "$ZIP"
 
-SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
-echo
+# 发布资产随 npm 安装器版本命名，上传到应用版本的 Release（每次发布新资产、永不覆盖）
+if command -v gh >/dev/null 2>&1; then
+  gh release upload "v${VERSION}" "$ZIP" --clobber || true
+fi
 
-echo "================= 发布物料 ================="
-echo "zip:  $ZIP"
-echo "version: $VERSION"
-echo "sha256:  $SHA"
-echo "（cask 已自动钉入 version/sha256；将 zip 上传到 GitHub Releases 对应 tag 即可）"
-echo "============================================="
+SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
+echo "[release] 签名校验通过：$(codesign -dv "$APP" 2>&1 | grep -E 'Signature=' | head -1)"
+echo "[release] zip: $ZIP"
+echo "[release] 应用版本: $VERSION | 安装器版本: $NPM_VERSION | sha256: $SHA"

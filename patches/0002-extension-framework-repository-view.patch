@@ -1,8 +1,8 @@
 diff --git a/app/src/ui/repository.tsx b/app/src/ui/repository.tsx
-index d716e31..0d8dab0 100644
+index d716e31..3ae2bd9 100644
 --- a/app/src/ui/repository.tsx
 +++ b/app/src/ui/repository.tsx
-@@ -8,6 +8,15 @@ import { NoChanges } from './changes/no-changes'
+@@ -8,6 +8,18 @@ import { NoChanges } from './changes/no-changes'
  import { MultipleSelection } from './changes/multiple-selection'
  import { FilesChangedBadge } from './changes/files-changed-badge'
  import { SelectedCommits, CompareSidebar } from './history'
@@ -14,11 +14,14 @@ index d716e31..0d8dab0 100644
 +  sectionForExtensionIndex,
 +  subscribeRepositorySectionExtensions,
 +} from '../lib/extensions/extension-points'
-+import { initializeExtensionLoader } from '../lib/extensions/plugin-loader'
++import {
++  initializeExtensionLoader,
++  registerExtensionDispatcher,
++} from '../lib/extensions/plugin-loader'
  import { Resizable } from './resizable'
  import { TabBar } from './tab-bar'
  import {
-@@ -19,7 +28,6 @@ import {
+@@ -19,7 +31,6 @@ import {
  } from '../lib/app-state'
  import { Dispatcher } from './dispatcher'
  import { IssuesStore, GitHubUserStore } from '../lib/stores'
@@ -26,7 +29,7 @@ index d716e31..0d8dab0 100644
  import { Account } from '../models/account'
  import { FocusContainer } from './lib/focus-container'
  import { ImageDiffType } from '../models/diff'
-@@ -153,6 +161,10 @@ const enum Tab {
+@@ -153,6 +164,10 @@ const enum Tab {
    History = 1,
  }
  
@@ -37,7 +40,7 @@ index d716e31..0d8dab0 100644
  export class RepositoryView extends React.Component<
    IRepositoryViewProps,
    IRepositoryViewState
-@@ -166,9 +178,15 @@ export class RepositoryView extends React.Component<
+@@ -166,9 +181,15 @@ export class RepositoryView extends React.Component<
  
    private readonly changesSidebarRef = React.createRef<ChangesSidebar>()
    private readonly compareSidebarRef = React.createRef<CompareSidebar>()
@@ -53,7 +56,7 @@ index d716e31..0d8dab0 100644
  
    public constructor(props: IRepositoryViewProps) {
      super(props)
-@@ -187,6 +205,21 @@ export class RepositoryView extends React.Component<
+@@ -187,6 +208,21 @@ export class RepositoryView extends React.Component<
      this.focusChangesNeeded = true
    }
  
@@ -75,7 +78,7 @@ index d716e31..0d8dab0 100644
    public scrollCompareListToTop(): void {
      this.forceCompareListScrollTop = true
  
-@@ -215,10 +248,16 @@ export class RepositoryView extends React.Component<
+@@ -215,10 +251,16 @@ export class RepositoryView extends React.Component<
    }
  
    private renderTabs(): JSX.Element {
@@ -93,7 +96,7 @@ index d716e31..0d8dab0 100644
  
      return (
        <TabBar selectedIndex={selectedTab} onTabClicked={this.onTabClicked}>
-@@ -230,6 +269,16 @@ export class RepositoryView extends React.Component<
+@@ -230,6 +272,16 @@ export class RepositoryView extends React.Component<
          <div className="with-indicator" id="history-tab">
            <span>History</span>
          </div>
@@ -110,7 +113,7 @@ index d716e31..0d8dab0 100644
        </TabBar>
      )
    }
-@@ -384,6 +433,36 @@ export class RepositoryView extends React.Component<
+@@ -384,6 +436,36 @@ export class RepositoryView extends React.Component<
      )
    }
  
@@ -147,7 +150,7 @@ index d716e31..0d8dab0 100644
    private renderSidebarContents(): JSX.Element {
      const selectedSection = this.props.state.selectedSection
  
-@@ -391,8 +470,10 @@ export class RepositoryView extends React.Component<
+@@ -391,8 +473,10 @@ export class RepositoryView extends React.Component<
        return this.renderChangesSidebar()
      } else if (selectedSection === RepositorySectionTab.History) {
        return this.renderCompareSidebar()
@@ -159,7 +162,7 @@ index d716e31..0d8dab0 100644
      }
    }
  
-@@ -637,8 +718,11 @@ export class RepositoryView extends React.Component<
+@@ -637,8 +721,11 @@ export class RepositoryView extends React.Component<
        return this.renderContentForChanges()
      } else if (selectedSection === RepositorySectionTab.History) {
        return this.renderContentForHistory()
@@ -172,7 +175,7 @@ index d716e31..0d8dab0 100644
      }
    }
  
-@@ -666,10 +750,23 @@ export class RepositoryView extends React.Component<
+@@ -666,10 +753,24 @@ export class RepositoryView extends React.Component<
  
    public componentDidMount() {
      window.addEventListener('keydown', this.onGlobalKeyDown)
@@ -184,6 +187,7 @@ index d716e31..0d8dab0 100644
 +      () => this.forceUpdate()
 +    )
 +    initializeExtensionLoader()
++    registerExtensionDispatcher(this.props.dispatcher)
    }
  
    public componentWillUnmount() {
@@ -196,7 +200,7 @@ index d716e31..0d8dab0 100644
    }
  
    public componentDidUpdate(): void {
-@@ -682,6 +779,12 @@ export class RepositoryView extends React.Component<
+@@ -682,6 +783,12 @@ export class RepositoryView extends React.Component<
        this.focusHistoryNeeded = false
        this.compareSidebarRef.current?.focusHistory()
      }
@@ -209,7 +213,7 @@ index d716e31..0d8dab0 100644
    }
  
    private onGlobalKeyDown = (event: KeyboardEvent) => {
-@@ -703,10 +806,20 @@ export class RepositoryView extends React.Component<
+@@ -703,10 +810,20 @@ export class RepositoryView extends React.Component<
    }
  
    private changeTab() {
@@ -234,7 +238,7 @@ index d716e31..0d8dab0 100644
  
      this.props.dispatcher.changeRepositorySection(
        this.props.repository,
-@@ -718,6 +831,8 @@ export class RepositoryView extends React.Component<
+@@ -718,6 +835,8 @@ export class RepositoryView extends React.Component<
      const section =
        tab === Tab.History
          ? RepositorySectionTab.History

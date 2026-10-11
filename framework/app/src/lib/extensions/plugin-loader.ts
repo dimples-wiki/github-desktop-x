@@ -17,7 +17,8 @@ import {
 } from '../../ui/lib/popover'
 import { DiffSelectionType } from '../../models/diff'
 import { Octicon } from '../../ui/octicons'
-import { defaultErrorHandler } from '../../ui/dispatcher'
+import { defaultErrorHandler, Dispatcher } from '../../ui/dispatcher'
+import { Repository } from '../../models/repository'
 import {
   getExtensionRegistrySizes,
   registerRepositorySection,
@@ -32,6 +33,14 @@ import {
  * sandboxed renderer and deliberately have **no** other access to the app's
  * module graph.
  */
+/** 由 ui/index.tsx 在创建应用 dispatcher 后注册（实例非模块导出）。 */
+let extensionDispatcher: Dispatcher | null = null
+
+/** ui/index.tsx 调用：向插件暴露受控的宿主动作。 */
+export function registerExtensionDispatcher(d: Dispatcher) {
+  extensionDispatcher = d
+}
+
 function assembleExtensionApi() {
   return {
     /** Runtime platform flag (plugins must not rely on webpack globals). */
@@ -58,6 +67,26 @@ function assembleExtensionApi() {
       Button,
       Checkbox,
       Octicon,
+    },
+
+    /** Curated host actions. Repository-scoped; plugins pass their own
+     *  repository (available via slot props). */
+    actions: {
+      /** 弹出原生「放弃更改」确认弹窗（host 负责实际丢弃） */
+      showDiscardChangesConfirmation: (
+        repository: Repository,
+        files: ReadonlyArray<any>
+      ) => {
+        if (extensionDispatcher === null) {
+          log.warn('[extensions] dispatcher not registered yet')
+          return
+        }
+        extensionDispatcher.showPopup({
+          type: PopupType.ConfirmDiscardChanges,
+          repository,
+          files,
+        })
+      },
     },
   }
 }
