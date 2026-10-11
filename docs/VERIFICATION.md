@@ -479,3 +479,30 @@ Commits 漏斗 vs Changes 漏斗 2x 对照图（31-funnel-changes-top-vs-commits
   自动清隔离走仍在运行的旧 postflight（弃用警告可接受），并已在 README 写明
   Gatekeeper 首启放行与 sudo xattr 后备
 - 未公证应用在每台新机器需一次放行；彻底解决需 Apple Developer ID 公证（$99/年）
+
+# 第十九轮：Tree 视图滚动撑开容器修复（2026-10-11）
+
+用户在 66 文件的真实仓库上发现：Tree 视图出现滚动条时**撑开整个侧栏**（提交表单被推出视口，
+行渲染在表单下方），List 正常。
+
+## 根因
+
+插件滚动链 `.file-list -> .list-focus-container -> .changes-tree` 中，`.list-focus-container`
+是裸块级 div（上游该类只定义状态着色，无布局属性），高度随内容增长 → `.changes-tree` 的
+`overflow-y: auto` 永不触发。List 正常是因为原生列表是虚拟化列表（显式高度）。此前夹具
+仓库只有 4 个文件从不滚动，掩盖了该缺陷。
+
+## 修复
+
+- 高度约束链补全：`.changes-view-slot .file-list` 与 `.list-focus-container` 补
+  `display:flex; flex-direction:column; flex:1; min-height:0`，`.changes-tree` 补
+  `min-height:0`（作用域限定 `.changes-view-slot`，不影响原生列表同名类）
+- 结构对齐原生：筛选行与 include-all 行**固定**在滚动区外，行渲染进独立的
+  `.changes-tree-body`（flex:1 + overflow-y:auto）
+
+## 验证
+
+- 122 文件仓库（186 树行）：滚动区高 235px、scrollHeight 5394、scrollTop=500 生效 ✓
+- 截图：表头与提交表单固定，树独立滚动（71-tree-scroll-test.png）
+- 全功能回归 18 项断言全绿（含 capture 自造变更的折叠/筛选/持久化断言，
+  测试脚本改为启动前自造变更——应用按窗口焦点刷新工作区，启动后写入不被感知）

@@ -3,6 +3,7 @@
  * 产物落在 screenshots/ 下，编号与 docs/VERIFICATION.md 的证据清单对应。
  */
 const driver = require('/Users/yoko/github-desktop-x/scripts/gui/driver.js')
+const fs = require('fs')
 
 async function waitListLoaded(page) {
   await page
@@ -13,6 +14,15 @@ async function waitListLoaded(page) {
 }
 
 ;(async () => {
+  // 在启动前自造未提交变更（fixture 可能刚重建、处于干净状态；
+  // 应用按窗口焦点刷新工作区，启动后写入不会及时被感知）
+  const fx = '/Users/yoko/github-desktop-x/scripts/fixtures/demo-repo'
+  fs.writeFileSync(`${fx}/capture-a.ts`, 'export const a = 1\n')
+  fs.writeFileSync(`${fx}/capture-b.md`, '# b\n')
+  fs.mkdirSync(`${fx}/capture-dir`, { recursive: true })
+  fs.writeFileSync(`${fx}/capture-dir/capture-c.ts`, 'export const c = 1\n')
+  fs.appendFileSync(`${fx}/README.md`, '\n<!-- capture touch -->\n')
+
   const { app, page } = await driver.launch()
   console.log('[capture] launched')
 
@@ -155,7 +165,7 @@ async function waitListLoaded(page) {
   await driver.screenshot(page, '21-changes-tree-default')
 
   // 22 选中高亮 + diff 联动：点 demo.js
-  const demoRow = page.locator('.changes-tree-row', { hasText: 'demo.js' })
+  const demoRow = page.locator('.changes-tree-row', { hasText: 'capture-a.ts' })
   await demoRow.click()
   await page.waitForTimeout(1200)
   const selectedOk = await demoRow.evaluate(el =>
@@ -165,18 +175,19 @@ async function waitListLoaded(page) {
   await driver.screenshot(page, '22-changes-tree-selected')
 
   // 23 折叠文件夹：src 收起后 demo.js 消失
-  await page.locator('.changes-tree-row.folder', { hasText: 'src' }).click()
+  await page.locator('.changes-tree-row.folder', { hasText: 'capture-dir' }).first().click()
   await page.waitForTimeout(500)
-  const demoGone =
-    (await page.locator('.changes-tree-row', { hasText: 'demo.js' }).count()) ===
-    0
-  console.log('[capture] collapsed hides demo.js =', demoGone)
+  const capCGone =
+    (await page
+      .locator('.changes-tree-row', { hasText: 'capture-c.ts' })
+      .count()) === 0
+  console.log('[capture] collapsed hides capture-c.ts =', capCGone)
   await driver.screenshot(page, '23-changes-tree-collapsed')
-  await page.locator('.changes-tree-row.folder', { hasText: 'src' }).click()
+  await page.locator('.changes-tree-row.folder', { hasText: 'capture-dir' }).first().click()
   await page.waitForTimeout(500)
 
   // 24 文本筛选（tree 内 Filter 输入框）
-  await page.fill('.changes-tree .filter-list-filter-field input', 'demo')
+  await page.fill('.changes-tree .filter-list-filter-field input', 'capture')
   await page.waitForTimeout(600)
   const filteredRows = await page.locator('.changes-tree-row').count()
   console.log('[capture] tree filter "demo" rows =', filteredRows)
@@ -194,7 +205,7 @@ async function waitListLoaded(page) {
   console.log(
     '[capture] tree filter persists across tabs:',
     JSON.stringify(persistedText), persistedRows, 'rows =>',
-    persistedText === 'demo' && persistedRows === filteredRows
+    persistedText === 'capture' && persistedRows === filteredRows
   )
   await driver.screenshot(page, '24b-tree-filter-persists')
   await page.fill('.changes-tree .filter-list-filter-field input', '')
