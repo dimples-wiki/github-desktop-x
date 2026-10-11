@@ -76,10 +76,36 @@
     return true;
   }
   var treeCss = `
-.changes-tree {
+/* \u9AD8\u5EA6\u7EA6\u675F\u94FE\uFF1Aslot -> .file-list -> .list-focus-container -> .changes-tree
+   \u7F3A\u4EFB\u4F55\u4E00\u73AF\uFF0C\u6811\u90FD\u4F1A\u6491\u5F00\u6574\u4E2A\u4FA7\u680F\u800C\u4E0D\u6EDA\u52A8\u3002 */
+.changes-view-slot .file-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.changes-view-slot .list-focus-container {
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+}
+
+.changes-tree {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   user-select: none;
+}
+
+.changes-tree .header.filter-field-row {
+  flex: none;
+}
+
+.changes-tree-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* The filter row and the include-all header reuse the native
@@ -410,7 +436,7 @@
             className: "changes-list-check-all",
             label: checkAllLabel
           }
-        ))), rows.map((row) => {
+        ))), /* @__PURE__ */ React.createElement("div", { className: "changes-tree-body" }, rows.map((row) => {
           const isFolder = row.file === void 0;
           const include = !isFolder && row.file.selection.getSelectionType() === DiffSelectionType.All;
           const selected = !isFolder && selectedKeys.has(String(row.file.path));
@@ -459,7 +485,7 @@
             ),
             isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
           );
-        }), rows.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "no-changes-filtered" }, /* @__PURE__ */ React.createElement("div", { className: "title" }, "No files match your current filters")) : null)
+        }), rows.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "no-changes-filtered" }, /* @__PURE__ */ React.createElement("div", { className: "title" }, "No files match your current filters")) : null))
       ));
     }
   };

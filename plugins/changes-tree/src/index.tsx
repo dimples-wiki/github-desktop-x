@@ -121,10 +121,36 @@ function matchesStatusFilters(file: any, filters: IStatusFilters): boolean {
 }
 
 const treeCss = `
-.changes-tree {
+/* 高度约束链：slot -> .file-list -> .list-focus-container -> .changes-tree
+   缺任何一环，树都会撑开整个侧栏而不滚动。 */
+.changes-view-slot .file-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.changes-view-slot .list-focus-container {
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+}
+
+.changes-tree {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   user-select: none;
+}
+
+.changes-tree .header.filter-field-row {
+  flex: none;
+}
+
+.changes-tree-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* The filter row and the include-all header reuse the native
@@ -575,6 +601,7 @@ export class ChangesTreeView extends React.Component<any, any> {
               </div>
             </div>
 
+            <div className="changes-tree-body">
             {rows.map((row) => {
               const isFolder = row.file === undefined;
               const include =
@@ -651,6 +678,7 @@ export class ChangesTreeView extends React.Component<any, any> {
                 <div className="title">No files match your current filters</div>
               </div>
             ) : null}
+            </div>
           </div>
         </div>
       </div>

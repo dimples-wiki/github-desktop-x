@@ -107,12 +107,10 @@ function seedBundledPlugins(directory: string): void {
       }
 
       const target = join(directory, entry.name)
-      if (existsSync(target)) {
-        continue
-      }
-
+      // 官方插件随 app 更新：始终以包内版本覆盖（用户自定义插件用不同 id，
+      // 永远不会被触碰）
       cpSync(join(bundled, entry.name), target, { recursive: true })
-      log.info(`[extensions] seeded bundled plugin ${entry.name}`)
+      log.info(`[extensions] synced bundled plugin ${entry.name}`)
     }
   } catch (error) {
     log.error('[extensions] failed to seed bundled plugins', error)
