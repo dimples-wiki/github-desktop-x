@@ -184,31 +184,8 @@ const treeCss = `
   fill: currentColor;
 }
 
-.changes-tree-context-menu {
-  min-width: 180px;
-  background: var(--box-background-color, #fff);
-  border: 1px solid var(--box-border-color, var(--box-border-color));
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  padding: 4px;
-}
 
-.changes-tree-context-menu-item {
-  display: block;
-  width: 100%;
-  padding: 4px 12px;
-  border: none;
-  background: transparent;
-  color: var(--text-color);
-  font-size: var(--font-size);
-  text-align: left;
-  border-radius: 4px;
-  cursor: default;
-}
 
-.changes-tree-context-menu-item:hover {
-  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.07));
-}
 
 /* The filter row and the include-all header reuse the native
    .header.filter-field-row classes, so every host style
@@ -410,7 +387,6 @@ export class ChangesTreeView extends React.Component<any, any> {
       statusFilters: persistedTreeState.statusFilters,
       isFilterOptionsOpen: false,
       focusWithin: false,
-      contextMenu: null, // { node, anchor }
     };
   }
 
@@ -503,40 +479,6 @@ export class ChangesTreeView extends React.Component<any, any> {
     for (const f of files) {
       this.props.onIncludeChanged(f, target);
     }
-  };
-
-  private openFolderMenu = (event: any, node: ITreeNode) => {
-    event.preventDefault();
-    this.setState({
-      contextMenu: { node, anchor: event.currentTarget },
-    });
-  };
-
-  /** 文件夹右键菜单动作：放弃其下所有文件的更改（走原生确认弹窗） */
-  private discardFolderChanges = (node: ITreeNode) => {
-    const files = collectFilesUnder(node);
-    const api = (globalThis as any).__GHD_EXTENSION_API__;
-    const show = api?.actions?.showDiscardChangesConfirmation;
-    console.log(
-      "[changes-tree] discard invoked",
-      "files:", files.length,
-      "| repository:", !!this.props.repository,
-      "| show:", typeof show,
-    );
-    if (show && this.props.repository) {
-      try {
-        show(this.props.repository, files);
-        console.log("[changes-tree] showDiscardChangesConfirmation called ok");
-      } catch (e) {
-        console.error("[changes-tree] show failed", e);
-      }
-    } else {
-      console.warn("[changes-tree] discard confirmation unavailable");
-    }
-  };
-
-  private closeContextMenu = () => {
-    this.setState({ contextMenu: null });
   };
 
   private toggleFilterOptionsOpen = () => {
@@ -807,7 +749,12 @@ export class ChangesTreeView extends React.Component<any, any> {
                   }}
                   onContextMenu={
                     isFolder
-                      ? (event: any) => this.openFolderMenu(event, row.node)
+                      ? (event: any) =>
+                          this.props.onFolderContextMenu?.(
+                            row.path,
+                            collectFilesUnder(row.node),
+                            event,
+                          )
                       : (event: any) => {
                           event.preventDefault();
                           this.props.onFileContextMenu(row.file, event);
@@ -868,27 +815,6 @@ export class ChangesTreeView extends React.Component<any, any> {
           </div>
         </div>
 
-        {this.state.contextMenu ? (
-          <Popover
-            className="changes-tree-context-menu"
-            anchor={this.state.contextMenu.anchor}
-            anchorPosition={PopoverAnchorPosition.BottomRight}
-            decoration={PopoverDecoration.Balloon}
-            onMousedownOutside={() => this.closeContextMenu()}
-            onClickOutside={() => this.closeContextMenu()}
-          >
-            <button
-              className="changes-tree-context-menu-item"
-              onClick={() => {
-                const node = this.state.contextMenu.node;
-                this.closeContextMenu();
-                this.discardFolderChanges(node);
-              }}
-            >
-              放弃更改…
-            </button>
-          </Popover>
-        ) : null}
       </div>
     );
   }

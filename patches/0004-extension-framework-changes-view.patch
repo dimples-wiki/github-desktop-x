@@ -1,5 +1,5 @@
 diff --git a/app/src/ui/changes/filter-changes-list.tsx b/app/src/ui/changes/filter-changes-list.tsx
-index 11fad24..6eb2096 100644
+index 11fad24..bc847ef 100644
 --- a/app/src/ui/changes/filter-changes-list.tsx
 +++ b/app/src/ui/changes/filter-changes-list.tsx
 @@ -73,6 +73,9 @@ import {
@@ -12,7 +12,95 @@ index 11fad24..6eb2096 100644
  import { HookProgress } from '../../lib/git'
  import { formatNumber } from '../../lib/format-number'
  
-@@ -1192,6 +1195,34 @@ export class FilterChangesList extends React.Component<
+@@ -802,6 +805,87 @@ export class FilterChangesList extends React.Component<
+     return items
+   }
+ 
++  /**
++   * 文件夹右键菜单：以文件夹身份适配原生菜单项。
++   * - Discard Changes 作用于文件夹下所有文件（含子目录）
++   * - Ignore Folder 忽略整个文件夹路径
++   * - 文件夹没有默认打开程序关联 → 该项禁用
++   */
++  private getDefaultContextMenuForFolder = (
++    folderPath: string,
++    files: ReadonlyArray<WorkingDirectoryFileChange>
++  ): ReadonlyArray<IMenuItem> => {
++    const paths = files.map(f => f.path)
++    // 文件夹桩对象：菜单项助手只读取 path/status
++    const folderStub = {
++      id: `folder:${folderPath}`,
++      path: folderPath,
++      status: { kind: AppFileStatusKind.Modified },
++    } as WorkingDirectoryFileChange
++
++    const items: IMenuItem[] = [
++      this.getDiscardChangesMenuItem(
++        files.length > 0 ? paths : [folderPath]
++      ),
++      { type: 'separator' },
++      {
++        label: __DARWIN__
++          ? 'Ignore Folder (Add to .gitignore)'
++          : 'Ignore folder (add to .gitignore)',
++        action: () => this.props.onIgnoreFile(folderPath),
++      },
++    ]
++
++    if (files.length > 1) {
++      items.push(
++        { type: 'separator' },
++        {
++          label: __DARWIN__
++            ? 'Include All Files in Folder'
++            : 'Include all files in folder',
++          action: () => files.map(f => this.props.onIncludeChanged(f, true)),
++        },
++        {
++          label: __DARWIN__
++            ? 'Exclude All Files in Folder'
++            : 'Exclude all files in folder',
++          action: () => files.map(f => this.props.onIncludeChanged(f, false)),
++        },
++      )
++    }
++
++    items.push(
++      { type: 'separator' },
++      this.getCopyPathMenuItem(folderStub),
++      this.getCopyRelativePathMenuItem(folderStub),
++      { type: 'separator' },
++      this.getRevealInFileManagerMenuItem(folderStub),
++      this.getOpenInExternalEditorMenuItem(folderStub, true),
++      {
++        label: OpenWithDefaultProgramLabel,
++        enabled: false,
++      }
++    )
++
++    return items
++  }
++
++  /** Tree 插件的文件夹右键桥：原生菜单 + 文件夹身份适配 */
++  private onChangesFolderViewContextMenu = (
++    folderPath: string,
++    files: ReadonlyArray<WorkingDirectoryFileChange>,
++    event: React.MouseEvent<HTMLDivElement>
++  ) => {
++    if (this.props.isCommitting) {
++      return
++    }
++
++    event.preventDefault()
++
++    const items = this.getDefaultContextMenuForFolder(folderPath, files)
++    showContextualMenu(items)
++  }
++
+   private getRebaseContextMenu(
+     file: WorkingDirectoryFileChange
+   ): ReadonlyArray<IMenuItem> {
+@@ -1192,6 +1276,34 @@ export class FilterChangesList extends React.Component<
      this.props.onFileSelectionChanged(rows)
    }
  
@@ -47,7 +135,7 @@ index 11fad24..6eb2096 100644
    private onFilesToCommitNotVisible = (onCommitAnyway: () => void) => {
      this.props.dispatcher.showPopup({
        type: PopupType.ConfirmCommitFilteredChanges,
-@@ -1309,6 +1340,8 @@ export class FilterChangesList extends React.Component<
+@@ -1309,6 +1421,8 @@ export class FilterChangesList extends React.Component<
            onKeyDown={this.onFilterKeyDown}
            value={this.props.fileListFilter.filterText}
          />
@@ -56,7 +144,7 @@ index 11fad24..6eb2096 100644
        </div>
      )
    }
-@@ -1332,56 +1365,73 @@ export class FilterChangesList extends React.Component<
+@@ -1332,56 +1446,74 @@ export class FilterChangesList extends React.Component<
      return (
        <>
          <div className="changes-list-container file-list filtered-changes-list">
@@ -103,6 +191,7 @@ index 11fad24..6eb2096 100644
 +            availableWidth={this.props.availableWidth}
 +            selectedFiles={this.state.selectedItems}
 +            repository={this.props.repository}
++            onFolderContextMenu={this.onChangesFolderViewContextMenu}
 +            onFileContextMenu={this.onChangesFileViewContextMenu}
 +            fallback={
 +              <AugmentedSectionFilterList<IChangesListItem>

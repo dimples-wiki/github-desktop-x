@@ -43,6 +43,13 @@ interface IChangesFileViewSlotProps {
 
   /** The current repository (lets plugins scope persisted state). */
   readonly repository: any
+
+  /** 文件夹右键桥：原生菜单 + 文件夹身份适配（Tree 插件使用） */
+  readonly onFolderContextMenu?: (
+    folderPath: string,
+    files: ReadonlyArray<any>,
+    event: any
+  ) => void
 }
 
 interface IChangesFileViewSlotState {
@@ -146,6 +153,7 @@ export class ChangesFileViewSlot extends React.Component<
         onIncludeAllChanged={this.props.onIncludeAllChanged}
         selectedFiles={this.props.selectedFiles}
         repository={this.props.repository}
+        onFolderContextMenu={this.props.onFolderContextMenu}
       />
     )
   }

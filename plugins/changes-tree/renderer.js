@@ -139,31 +139,8 @@
   fill: currentColor;
 }
 
-.changes-tree-context-menu {
-  min-width: 180px;
-  background: var(--box-background-color, #fff);
-  border: 1px solid var(--box-border-color, var(--box-border-color));
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  padding: 4px;
-}
 
-.changes-tree-context-menu-item {
-  display: block;
-  width: 100%;
-  padding: 4px 12px;
-  border: none;
-  background: transparent;
-  color: var(--text-color);
-  font-size: var(--font-size);
-  text-align: left;
-  border-radius: 4px;
-  cursor: default;
-}
 
-.changes-tree-context-menu-item:hover {
-  background: var(--box-hover-background-color, rgba(255, 255, 255, 0.07));
-}
 
 /* The filter row and the include-all header reuse the native
    .header.filter-field-row classes, so every host style
@@ -311,9 +288,7 @@
         filterText: persistedTreeState.filterText,
         statusFilters: persistedTreeState.statusFilters,
         isFilterOptionsOpen: false,
-        focusWithin: false,
-        contextMenu: null
-        // { node, anchor }
+        focusWithin: false
       };
     }
     /** Persists the persistable slice after every relevant update. */
@@ -396,40 +371,6 @@
       for (const f of files) {
         this.props.onIncludeChanged(f, target);
       }
-    };
-    openFolderMenu = (event, node) => {
-      event.preventDefault();
-      this.setState({
-        contextMenu: { node, anchor: event.currentTarget }
-      });
-    };
-    /** 文件夹右键菜单动作：放弃其下所有文件的更改（走原生确认弹窗） */
-    discardFolderChanges = (node) => {
-      const files = collectFilesUnder(node);
-      const api2 = globalThis.__GHD_EXTENSION_API__;
-      const show = api2?.actions?.showDiscardChangesConfirmation;
-      console.log(
-        "[changes-tree] discard invoked",
-        "files:",
-        files.length,
-        "| repository:",
-        !!this.props.repository,
-        "| show:",
-        typeof show
-      );
-      if (show && this.props.repository) {
-        try {
-          show(this.props.repository, files);
-          console.log("[changes-tree] showDiscardChangesConfirmation called ok");
-        } catch (e) {
-          console.error("[changes-tree] show failed", e);
-        }
-      } else {
-        console.warn("[changes-tree] discard confirmation unavailable");
-      }
-    };
-    closeContextMenu = () => {
-      this.setState({ contextMenu: null });
     };
     toggleFilterOptionsOpen = () => {
       this.setState((prevState) => ({
@@ -625,7 +566,11 @@
                   this.props.onSelectionChanged([row.file]);
                 }
               },
-              onContextMenu: isFolder ? (event) => this.openFolderMenu(event, row.node) : (event) => {
+              onContextMenu: isFolder ? (event) => this.props.onFolderContextMenu?.(
+                row.path,
+                collectFilesUnder(row.node),
+                event
+              ) : (event) => {
                 event.preventDefault();
                 this.props.onFileContextMenu(row.file, event);
               },
@@ -669,29 +614,7 @@
             isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
           );
         }), rows.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "no-changes-filtered" }, /* @__PURE__ */ React.createElement("div", { className: "title" }, "No files match your current filters")) : null))
-      ), this.state.contextMenu ? /* @__PURE__ */ React.createElement(
-        Popover,
-        {
-          className: "changes-tree-context-menu",
-          anchor: this.state.contextMenu.anchor,
-          anchorPosition: PopoverAnchorPosition.BottomRight,
-          decoration: PopoverDecoration.Balloon,
-          onMousedownOutside: () => this.closeContextMenu(),
-          onClickOutside: () => this.closeContextMenu()
-        },
-        /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            className: "changes-tree-context-menu-item",
-            onClick: () => {
-              const node = this.state.contextMenu.node;
-              this.closeContextMenu();
-              this.discardFolderChanges(node);
-            }
-          },
-          "\u653E\u5F03\u66F4\u6539\u2026"
-        )
-      ) : null);
+      ));
     }
   };
   globalThis.__GHD_EXTENSION_API__.registerChangesFileView({
