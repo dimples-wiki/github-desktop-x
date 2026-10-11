@@ -160,7 +160,28 @@
         persistedFilter = filter;
         return { filter };
       });
+      void this.ensureAllCommitsLoaded();
     };
+    /** 逐批加载直到全部提交就绪（50 批 = 5000 条保护上限）。 */
+    loadingAll = false;
+    async ensureAllCommitsLoaded() {
+      if (this.loadingAll) return;
+      this.loadingAll = true;
+      try {
+        const { repository } = this.props;
+        let previous = -1;
+        let guard = 0;
+        while (guard < 50) {
+          const count = this.props.state.compareState.commitSHAs.length;
+          if (count === previous) break;
+          previous = count;
+          await this.props.dispatcher.loadNextCommitBatch(repository);
+          guard++;
+        }
+      } finally {
+        this.loadingAll = false;
+      }
+    }
     onMessageTextChanged = (value) => {
       this.onFilterChanged({
         messageTerms: value.split(/\s+/).map((term) => term.trim()).filter((term) => term.length > 0)

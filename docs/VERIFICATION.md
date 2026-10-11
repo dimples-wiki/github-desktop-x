@@ -506,3 +506,25 @@ Commits 漏斗 vs Changes 漏斗 2x 对照图（31-funnel-changes-top-vs-commits
 - 截图：表头与提交表单固定，树独立滚动（71-tree-scroll-test.png）
 - 全功能回归 18 项断言全绿（含 capture 自造变更的折叠/筛选/持久化断言，
   测试脚本改为启动前自造变更——应用按窗口焦点刷新工作区，启动后写入不被感知）
+
+# 第二十轮：空态一致性 + 插件更新播种 + Commits 筛选全量加载（2026-10-11）
+
+用户验收发现三个问题：
+
+1. **0 变更时 Tree 与 List 空态不一致**：Tree 渲染"无匹配文件"提示，List 为空白。
+   修复：`rows.length === 0 && files.length > 0` 才显示筛选提示——仓库本身无变更时
+   与 List 一致渲染空白。
+2. **插件更新不生效**：plugin-host 播种策略为"存在即跳过"，app 内置插件更新后
+   userData 里的旧版永远不更新。修复：官方插件（bundled-plugins 内的 id）随 app
+   启动始终以包内版本覆盖；用户自定义插件（不同 id）不受影响。
+3. **Commits 筛选计数不完整 + "300 上限"**：CommitBatchSize=100 懒加载、无硬上限
+   （300 = 滚动了 3 批）。真问题是筛选 UI 建在未加载完的集合上。修复：任一筛选
+   维度激活时自动逐批加载至全量（50 批 = 5000 条保护上限），"N of M commits"
+   从此准确。
+
+## 验证
+
+- 专用空仓库对比：Tree 空态 = List 空态（筛选行 + "0 changed files" + 空白）✓
+- 22 变更场景矩阵渲染 ✓（截图 84-acceptance-matrix.png）
+- 清 userData 插件后启动 → plugin-host 自动播种双插件 ✓
+- Commits 筛选激活时自动加载全量（断言随仓库状态相对验证）✓

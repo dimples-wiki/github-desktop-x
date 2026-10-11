@@ -98,6 +98,32 @@ export class CommitsSidebar extends React.Component<any, ICommitsSidebarState> {
       persistedFilter = filter
       return { filter }
     })
+
+    // 筛选必须作用于完整历史：激活任一筛选维度时加载剩余批次
+    // （否则"N of M commits"的 M 只是已加载量，筛选结果不完整）。
+    void this.ensureAllCommitsLoaded()
+  }
+
+  /** 逐批加载直到全部提交就绪（50 批 = 5000 条保护上限）。 */
+  private loadingAll = false;
+
+  private async ensureAllCommitsLoaded(): Promise<void> {
+    if (this.loadingAll) return;
+    this.loadingAll = true;
+    try {
+      const { repository } = this.props;
+      let previous = -1;
+      let guard = 0;
+      while (guard < 50) {
+        const count = this.props.state.compareState.commitSHAs.length;
+        if (count === previous) break;
+        previous = count;
+        await this.props.dispatcher.loadNextCommitBatch(repository);
+        guard++;
+      }
+    } finally {
+      this.loadingAll = false;
+    }
   }
 
   private onMessageTextChanged = (value: string) => {

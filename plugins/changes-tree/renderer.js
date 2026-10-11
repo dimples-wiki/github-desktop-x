@@ -613,7 +613,7 @@
             ),
             isFolder ? /* @__PURE__ */ React.createElement("span", { className: "tree-count" }, row.descendantCount) : null
           );
-        }), rows.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "no-changes-filtered" }, /* @__PURE__ */ React.createElement("div", { className: "title" }, "No files match your current filters")) : null))
+        }), rows.length === 0 && files.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "no-changes-filtered" }, /* @__PURE__ */ React.createElement("div", { className: "title" }, "No files match your current filters")) : null))
       ));
     }
   };

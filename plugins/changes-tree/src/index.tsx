@@ -806,7 +806,9 @@ export class ChangesTreeView extends React.Component<any, any> {
               );
             })}
 
-            {rows.length === 0 ? (
+            {/* 与原生 List 空态一致：仓库本来就没有变更 → 空白；
+                有文件但被筛选隐藏 → 才显示未匹配提示 */}
+            {rows.length === 0 && files.length > 0 ? (
               <div className="no-changes-filtered">
                 <div className="title">No files match your current filters</div>
               </div>
